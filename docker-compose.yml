@@ -1,0 +1,37 @@
+services:
+  emulator:
+    image: budtmo/docker-android
+    privileged: true
+    ports:
+      - "6080:6080"  # Port for VNC access
+      - "5554:5554"  # Emulator control port
+      - "5555:5555"  # ADB communication port
+    networks:
+      - android-net
+    environment:
+      - EMULATOR_DEVICE=Samsung Galaxy S10
+      - WEB_VNC=true
+    devices:
+      - /dev/kvm
+      
+  flutter:
+    image: ghcr.io/cirruslabs/flutter
+    volumes:
+      - ./:/mobile
+    working_dir: /mobile
+    environment:
+      - deezerClientId=1
+    networks:
+      - android-net
+    command: >
+      bash -c "sudo chmod +x ./prepare_submodules.sh &&
+               ./prepare_submodules.sh &&
+               flutter pub get &&
+               flutter build apk --debug &&
+               adb connect emulator:5555 &&
+               adb install -r build/app/outputs/flutter-apk/app-debug.apk &&
+               flutter run"
+
+networks:
+  android-net:
+    driver: bridge

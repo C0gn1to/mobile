@@ -27,24 +27,22 @@ https://t.me/SaturnReleases
 # Credits
 Saturn Mobile is a modified version of ReFreezer which you can check out by [Clicking Here.](https://github.com/DJDoubleD/refreezer)
 
-# Compile from source
+# Compile from source (Dev)
 
-Install flutter SDK 3.17.2: https://flutter.dev/docs/get-started/install  
-(Optional) Generate keys for release build: https://flutter.dev/docs/deployment/android  
+Install docker
 
 Download source:
 ```
 git clone https://github.com/SaturnMusic/mobile
 git submodule init 
-git submodule update
+git submodule update --remote --merge
 ```
 
 Compile:  
 ```
-flutter pub get
-flutter build apk
-```  
-NOTE: You have to use own keys, or build debug using `flutter build apk --debug`
+docker compose up
+```
+Access Emulator http://localhost:6080/
 
 # Desktop Version
 https://github.com/SaturnMusic/PC
