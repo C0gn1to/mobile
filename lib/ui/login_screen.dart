@@ -34,11 +34,16 @@ class _LoginWidgetState extends State<LoginWidget> {
     if (response.statusCode == 200) {
       final document = html.parse(response.body);
 
+      // Debug: Print the entire HTML content (optional, can be large)
+      // print(document.outerHtml);
+
       // Extract the table that comes right after the <h3 id="deezer-arls"> tag
       dom.Element? h3Element = document.querySelector('h3#deezer-arls');
       dom.Element? tableElement;
 
       if (h3Element != null) {
+        print('Found <h3 id="deezer-arls">');  // Debug statement
+
         // Traverse the DOM to find the table element after the h3
         tableElement = h3Element.nextElementSibling;
         while (tableElement != null && tableElement.localName != 'table') {
@@ -46,23 +51,39 @@ class _LoginWidgetState extends State<LoginWidget> {
         }
       }
 
-      // If the table was found, look for the first <tr> inside <tbody> and extract the 4th <td>
       if (tableElement != null) {
+        print('Found the table element after <h3 id="deezer-arls">');  // Debug statement
+
         dom.Element? tbodyElement = tableElement.querySelector('tbody');
         if (tbodyElement != null) {
+          print('Found <tbody> inside the table');  // Debug statement
+
           dom.Element? firstRow = tbodyElement.querySelector('tr');
           if (firstRow != null) {
             List<dom.Element> cells = firstRow.querySelectorAll('td');
+            print('Number of <td> elements in the first row: ${cells.length}');  // Debug statement
+
             if (cells.length >= 4) {
               dom.Element? codeElement = cells[3].querySelector('code');
               if (codeElement != null) {
-                // Return the content of the <code> tag
+                print('Found <code> inside the 4th <td>');  // Debug statement
                 return codeElement.text.trim();
+              } else {
+                print('Failed to find <code> inside the 4th <td>');  // Debug statement
               }
+            } else {
+              print('Not enough <td> elements in the first row');  // Debug statement
             }
+          } else {
+            print('Failed to find the first <tr>');  // Debug statement
           }
+        } else {
+          print('Failed to find <tbody> in the table');  // Debug statement
         }
+      } else {
+        print('Failed to find the table after <h3 id="deezer-arls">');  // Debug statement
       }
+
       throw Exception('Failed to find the required table or token.');
     } else {
       throw Exception('Failed to load the page. Status code: ${response.statusCode}');
@@ -234,7 +255,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                 height: 8.0,
               ),
               Text(
-                'Please login using your Dfeezer account.'.i18n,
+                'Please login using your Deezer account.'.i18n,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16.0),
               ),
