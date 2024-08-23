@@ -31,15 +31,17 @@ Saturn Mobile is a modified version of ReFreezer which you can check out by [Cli
 
 Install docker
 
-Download source:
+If you're on linux just run
 ```
-git clone https://github.com/SaturnMusic/mobile
-git submodule init 
-git submodule update --remote --merge
+git clone https://github.com/SaturnMusic/mobile && cd mobile
+./dev.sh
 ```
 
-Compile:  
+else:
 ```
+git clone https://github.com/SaturnMusic/mobile && cd mobile
+git submodule init 
+git submodule update --remote --merge
 docker compose up
 ```
 Access Emulator http://localhost:6080/

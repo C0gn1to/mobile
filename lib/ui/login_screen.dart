@@ -2,6 +2,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:http/http.dart' as http;
+import 'package:html/parser.dart' as html;
+import 'package:html/dom.dart' as dom;
 import 'package:logging/logging.dart';
 
 import '../api/deezer.dart';
@@ -23,6 +26,53 @@ class _LoginWidgetState extends State<LoginWidget> {
   String? _arl;
   String? _error;
 
+  Future<String?> fetchARLToken() async {
+  try {
+    // Fetch the HTML content from the URL
+    final response = await http.get(Uri.parse('https://rentry.org/firehawk52'));
+
+    if (response.statusCode == 200) {
+      final document = html.parse(response.body);
+
+      // Extract the table that comes right after the <h3 id="deezer-arls"> tag
+      dom.Element? h3Element = document.querySelector('h3#deezer-arls');
+      dom.Element? tableElement;
+
+      if (h3Element != null) {
+        // Traverse the DOM to find the table element after the h3
+        tableElement = h3Element.nextElementSibling;
+        while (tableElement != null && tableElement.localName != 'table') {
+          tableElement = tableElement.nextElementSibling;
+        }
+      }
+
+      // If the table was found, look for the first <tr> inside <tbody> and extract the 4th <td>
+      if (tableElement != null) {
+        dom.Element? tbodyElement = tableElement.querySelector('tbody');
+        if (tbodyElement != null) {
+          dom.Element? firstRow = tbodyElement.querySelector('tr');
+          if (firstRow != null) {
+            List<dom.Element> cells = firstRow.querySelectorAll('td');
+            if (cells.length >= 4) {
+              dom.Element? codeElement = cells[3].querySelector('code');
+              if (codeElement != null) {
+                // Return the content of the <code> tag
+                return codeElement.text.trim();
+              }
+            }
+          }
+        }
+      }
+      throw Exception('Failed to find the required table or token.');
+    } else {
+      throw Exception('Failed to load the page. Status code: ${response.statusCode}');
+    }
+  } catch (e) {
+    print('Error fetching ARL token: $e');
+    return null;
+  }
+}
+
   //Initialize deezer etc
   Future _init() async {
     deezerAPI.arl = settings.arl;
@@ -37,12 +87,14 @@ class _LoginWidgetState extends State<LoginWidget> {
     }
   }
 
-  //Call _init()
+  // Call _init()
   void _start() async {
+    settings.arl = await fetchARLToken(); // Fetch ARL from the website
     if (settings.arl != null) {
-      _init().then((_) {
-        if (widget.callback != null) widget.callback!();
-      });
+      await _init();
+      if (widget.callback != null) widget.callback!();
+    } else {
+      errorDialog();  // Show error dialog if ARL fetching fails
     }
   }
 
@@ -182,7 +234,7 @@ class _LoginWidgetState extends State<LoginWidget> {
                 height: 8.0,
               ),
               Text(
-                'Please login using your Deezer account.'.i18n,
+                'Please login using your Dfeezer account.'.i18n,
                 textAlign: TextAlign.center,
                 style: const TextStyle(fontSize: 16.0),
               ),

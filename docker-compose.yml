@@ -1,6 +1,7 @@
 services:
   emulator:
     image: budtmo/docker-android
+    container_name: emulator
     privileged: true
     ports:
       - "6080:6080"  # Port for VNC access
@@ -16,21 +17,18 @@ services:
       
   flutter:
     image: ghcr.io/cirruslabs/flutter
+    container_name: flutter
     volumes:
       - ./:/mobile
     working_dir: /mobile
-    environment:
-      - deezerClientId=1
     networks:
       - android-net
     command: >
-      bash -c "sudo chmod +x ./prepare_submodules.sh &&
-               ./prepare_submodules.sh &&
+      bash -c "./prepare_submodules.sh &&
                flutter pub get &&
                flutter build apk --debug &&
                adb connect emulator:5555 &&
-               adb install -r build/app/outputs/flutter-apk/app-debug.apk &&
-               flutter run"
+               adb install -r build/app/outputs/flutter-apk/app-debug.apk"
 
 networks:
   android-net:
