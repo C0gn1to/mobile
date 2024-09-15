@@ -21,6 +21,9 @@ jobs:
       with:
         submodules: true  # Checkout submodules
 
+    - name: Configure Git safe directory
+      run: git config --global --add safe.directory /__w/mobile/mobile
+
     - name: Initialize and update submodules
       run: |
         git submodule sync
