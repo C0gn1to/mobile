@@ -28,8 +28,11 @@ jobs:
         git submodule sync
         git submodule update --init --force --depth=1 --remote
 
-    - name: Install build_runner globally
-      run: dart pub global activate build_runner
+    - name: Install build_runner and dependencies globally
+      run: |
+        dart pub global activate build_runner
+        dart pub global activate json_serializable
+        dart pub global activate source_gen
 
     - name: Process submodules
       run: |
