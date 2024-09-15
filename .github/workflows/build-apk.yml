@@ -12,27 +12,20 @@ jobs:
   build:
     runs-on: ubuntu-latest
 
+    container:
+      image: ghcr.io/cirruslabs/flutter:latest
+
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
         submodules: true  # Checkout submodules
 
-    - name: Set up Flutter
-      uses: subosito/flutter-action@v2
-    #   with:
-    #     flutter-version: '3.24.3'  # Specify your Flutter version
-
     - name: Initialize and update submodules
       run: |
         git submodule sync
         git submodule update --init --force --depth=1 --remote
 
-    - name: Install build_runner and dependencies globally
-      run: |
-        dart pub global activate build_runner
-        dart pub global activate json_serializable
-        dart pub global activate source_gen
 
     - name: Process submodules
       run: |
