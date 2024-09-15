@@ -29,6 +29,8 @@ jobs:
         git submodule sync
         git submodule update --init --force --depth=1 --remote
 
+    - name: Get Flutter dependencies for main project
+      run: flutter pub get
 
     - name: Process submodules
       run: |
@@ -42,9 +44,6 @@ jobs:
           flutter clean
           cd ..
         done
-
-    - name: Get Flutter dependencies
-      run: flutter pub get
 
     - name: Set up keystore
       run: |
