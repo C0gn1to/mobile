@@ -28,6 +28,9 @@ jobs:
         git submodule sync
         git submodule update --init --force --depth=1 --remote
 
+    - name: Install build_runner globally
+      run: dart pub global activate build_runner
+
     - name: Process submodules
       run: |
         submodule_paths=$(git submodule status | awk '{ print $2 }')
@@ -35,8 +38,8 @@ jobs:
           echo "Processing submodule $submodule"
           cd $submodule
           flutter pub get
-          dart run build_runner clean
-          dart run build_runner build --delete-conflicting-outputs
+          dart pub global run build_runner clean
+          dart pub global run build_runner build --delete-conflicting-outputs
           flutter clean
           cd ..
         done
