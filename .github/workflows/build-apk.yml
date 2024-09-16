@@ -30,7 +30,7 @@ jobs:
         echo "deezerClientSecret=2" >> $GITHUB_ENV
         echo "lastFmApiKey=3" >> $GITHUB_ENV
         echo "lastFmApiSecret=4" >> $GITHUB_ENV
-        
+
     - name: Process submodules
       run: |
         mainProjectDir=$(pwd)
@@ -43,10 +43,6 @@ jobs:
 
             echo "Running 'flutter pub get' for $name"
             flutter pub get
-
-            echo "Running 'dart run build_runner clean' for $name from main project"
-            cd $mainProjectDir
-            dart run build_runner clean
 
             echo "Running 'dart run build_runner build --delete-conflicting-outputs' for $name from main project"
             dart run build_runner build --delete-conflicting-outputs
