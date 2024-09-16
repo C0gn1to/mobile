@@ -26,8 +26,11 @@ jobs:
 
     - name: Set up environment variables
       run: |
-        echo "DEEZER_CLIENT_ID=1" >> $GITHUB_ENV
-
+        echo "deezerClientId=1" >> $GITHUB_ENV
+        echo "deezerClientSecret=2" >> $GITHUB_ENV
+        echo "lastFmApiKey=3" >> $GITHUB_ENV
+        echo "lastFmApiSecret=4" >> $GITHUB_ENV
+        
     - name: Process submodules
       run: |
         mainProjectDir=$(pwd)
