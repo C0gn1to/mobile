@@ -24,26 +24,48 @@ jobs:
     - name: Configure Git safe directory
       run: git config --global --add safe.directory /__w/mobile/mobile
 
-    - name: Initialize and update submodules
+    - name: Set up environment variables
       run: |
-        git submodule sync
-        git submodule update --init --force --depth=1 --remote
-
-    - name: Get Flutter dependencies for main project
-      run: flutter pub get
+        echo "DEEZER_CLIENT_ID=1" >> $GITHUB_ENV
 
     - name: Process submodules
       run: |
+        mainProjectDir=$(pwd)
+
+        invoke_build_runner() {
+            dir=$1
+            name=$2
+            echo "Processing $name at $dir"
+            cd $dir
+
+            echo "Running 'flutter pub get' for $name"
+            flutter pub get
+
+            echo "Running 'dart run build_runner clean' for $name from main project"
+            cd $mainProjectDir
+            dart run build_runner clean
+
+            echo "Running 'dart run build_runner build --delete-conflicting-outputs' for $name from main project"
+            dart run build_runner build --delete-conflicting-outputs
+
+            echo "Running 'flutter clean' for $name"
+            cd $dir
+            flutter clean
+        }
+
         submodule_paths=$(git submodule status | awk '{ print $2 }')
         for submodule in $submodule_paths; do
-          echo "Processing submodule $submodule"
-          cd $submodule
-          flutter pub get
-          dart pub global run build_runner clean
-          dart pub global run build_runner build --delete-conflicting-outputs
-          flutter clean
-          cd ..
+            submodulePath="$mainProjectDir/$submodule"
+            invoke_build_runner $submodulePath "submodule $submodule"
         done
+
+        invoke_build_runner $mainProjectDir "main project"
+
+        cd $mainProjectDir
+        echo "Running 'flutter clean' for the main project"
+        flutter clean
+        echo "Running 'flutter pub get' for the main project"
+        flutter pub get
 
     - name: Set up keystore
       run: |
