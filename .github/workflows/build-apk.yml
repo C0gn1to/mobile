@@ -24,6 +24,11 @@ jobs:
     - name: Configure Git safe directory
       run: git config --global --add safe.directory /__w/mobile/mobile
 
+    - name: Initialize and update submodules
+      run: |
+        git submodule sync
+        git submodule update --init --force --depth=1 --remote
+
     - name: Set up environment variables
       run: |
         echo "deezerClientId=1" >> $GITHUB_ENV
