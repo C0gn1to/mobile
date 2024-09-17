@@ -38,37 +38,16 @@ jobs:
 
     - name: Process submodules
       run: |
-        mainProjectDir=$(pwd)
-
-        invoke_build_runner() {
-            dir=$1
-            name=$2
-            echo "Processing $name at $dir"
-            cd $dir
-
-            echo "Running 'flutter pub get' for $name"
-            flutter pub get
-
-            echo "Running 'dart run build_runner build --delete-conflicting-outputs' for $name from main project"
-            dart run build_runner build --delete-conflicting-outputs
-
-            echo "Running 'flutter clean' for $name"
-            cd $dir
-            flutter clean
-        }
-
         submodule_paths=$(git submodule status | awk '{ print $2 }')
         for submodule in $submodule_paths; do
-            submodulePath="$mainProjectDir/$submodule"
-            invoke_build_runner $submodulePath "submodule $submodule"
+            echo "Processing submodule $submodule"
+            cd $submodule
+            flutter pub get
+            dart run build_runner clean
+            dart run build_runner build --delete-conflicting-outputs
+            flutter clean
+            cd ..
         done
-
-        invoke_build_runner $mainProjectDir "main project"
-
-        cd $mainProjectDir
-        echo "Running 'flutter clean' for the main project"
-        flutter clean
-        echo "Running 'flutter pub get' for the main project"
         flutter pub get
 
     - name: Set up keystore
