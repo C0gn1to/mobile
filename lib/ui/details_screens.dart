@@ -244,7 +244,13 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                             ...List.generate(
                                 tracks.length,
                                 (i) => TrackTile(tracks[i], onTap: () {
+                                  if (clubroom.ifclub()) {
+                                    if (clubroom.ifhost()) {
+                                      GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, tracks[i].toMediaItem());
+                                    }
+                                  } else {
                                       GetIt.I<AudioPlayerHandler>().playFromAlbum(album, tracks[i].id ?? '');
+                                  }
                                     }, onHold: () {
                                       MenuSheet m = MenuSheet();
                                       m.defaultTrackMenu(tracks[i], context: context);
@@ -467,7 +473,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                       tracks,
                                       tracks[0].id!,
                                       QueueSource(
-                                          id: artist.id, text: 'Radio'.i18n + ' ${artist.name}', source: 'smartradio'));
+                                          id: artist.id, text: 'Radio'.i18n + ' ${artist.name}', source: 'artist_smartradio'));
                                 }
                               },
                             )
@@ -522,7 +528,13 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                         return TrackTile(
                           t,
                           onTap: () {
+                            if (clubroom.ifclub()) {
+                              if (clubroom.ifhost()) {
+                                GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                              }
+                            } else {
                             GetIt.I<AudioPlayerHandler>().playFromTopTracks(artist.topTracks, t.id!, artist);
+                            }
                           },
                           onHold: () {
                             MenuSheet mi = MenuSheet();
@@ -537,7 +549,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                                 builder: (context) => TrackListScreen(
                                     artist.topTracks,
                                     QueueSource(
-                                        id: artist.id, text: 'Top'.i18n + '${artist.name}', source: 'topTracks'))));
+                                        id: artist.id, text: 'Top'.i18n + '${artist.name}', source: 'artist_top'))));
                           }),
                       const FreezerDivider(),
                       //Albums
@@ -629,7 +641,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
   Widget get _loadingWidget {
     if (_loading) {
       return Padding(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
+        padding: const EdgeInsets.symmetric(vertical: 8.0),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
@@ -679,6 +691,10 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
             appBar: FreezerAppBar(
               'Discography'.i18n,
               bottom: TabBar(
+                dividerColor: Colors.transparent,
+                indicatorColor: Theme.of(context).primaryColor,
+                overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+                labelColor: Theme.of(context).primaryColor,
                 tabs: [
                   Tab(
                       icon: Icon(
@@ -1072,8 +1088,14 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
           ...List.generate(playlist.tracks!.length, (i) {
             Track t = sorted[i];
             return TrackTile(t, onTap: () {
-              Playlist p = Playlist(title: playlist.title, id: playlist.id, tracks: sorted);
-              GetIt.I<AudioPlayerHandler>().playFromPlaylist(p, t.id!);
+              if (clubroom.ifclub()) {
+                if (clubroom.ifhost()) {
+                  GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                }
+              } else {
+                Playlist p = Playlist(title: playlist.title, id: playlist.id, tracks: sorted);
+                GetIt.I<AudioPlayerHandler>().playFromPlaylist(p, t.id!);
+              }
             }, onHold: () {
               MenuSheet m = MenuSheet();
               m.defaultTrackMenu(t, context: context, options: [
@@ -1088,7 +1110,7 @@ class _PlaylistDetailsState extends State<PlaylistDetails> {
           }),
           if (_loading)
             Padding(
-              padding: EdgeInsets.symmetric(vertical: 8.0),
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: <Widget>[CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
@@ -1253,7 +1275,7 @@ class _ShowScreenState extends State<ShowScreen> {
           //Loading
           if (_loading)
             Padding(
-              padding: EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
@@ -1277,7 +1299,9 @@ class _ShowScreenState extends State<ShowScreen> {
                   },
                 ),
                 onTap: () async {
+                  if (clubroom.ifclub()) {
                   await GetIt.I<AudioPlayerHandler>().playShowEpisode(_show, _episodes, index: i);
+                  }
                 },
               );
             })

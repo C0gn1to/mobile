@@ -19,8 +19,12 @@ import '../ui/downloads_screen.dart';
 import '../ui/elements.dart';
 import '../ui/error.dart';
 import '../ui/tiles.dart';
+import '../ui/clubs_screen.dart';
 import 'menu.dart';
 import 'settings_screen.dart';
+import '../api/clubs.dart';
+
+ClubRoom clubRoom = ClubRoom();
 
 class LibraryAppBar extends StatelessWidget implements PreferredSizeWidget {
   const LibraryAppBar({super.key});
@@ -144,6 +148,21 @@ class LibraryScreen extends StatelessWidget {
             },
           ),
           const FreezerDivider(),
+          ListTile(
+            title: Text('Clubs'.i18n),
+            leading: const LeadingIcon(Icons.nightlife, color: Color.fromARGB(255, 192, 95, 17)),
+            onTap: () {
+              var realcontext = context;
+              if (!clubRoom.ifclub()) {
+                Navigator.of(realcontext).push(MaterialPageRoute(
+                builder: (realcontext) => const ClubsScreen()));
+              } else {
+                Navigator.of(realcontext).push(MaterialPageRoute(
+                builder: (realcontext) => const InClubScreen()));
+              }
+            },
+          ),
+          const FreezerDivider(),
           ExpansionTile(
             title: Text('Statistics'.i18n),
             leading: const LeadingIcon(Icons.insert_chart, color: Colors.grey),
@@ -156,7 +175,7 @@ class LibraryScreen extends StatelessWidget {
                   if (snapshot.hasError) return const ErrorScreen();
                   if (!snapshot.hasData) {
                     return Padding(
-                      padding: EdgeInsets.symmetric(vertical: 4.0),
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: <Widget>[CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
@@ -506,6 +525,11 @@ class _LibraryTracksState extends State<LibraryTracks> {
                   return TrackTile(
                     t,
                     onTap: () {
+                      if (clubroom.ifclub()) {
+                        if (clubroom.ifhost()) {
+                          GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                        }
+                      } else {
                       GetIt.I<AudioPlayerHandler>().playFromTrackList(
                           (tracks.length == (trackCount ?? 0))
                               ? _sorted
@@ -514,7 +538,8 @@ class _LibraryTracksState extends State<LibraryTracks> {
                           QueueSource(
                               id: deezerAPI.favoritesPlaylistId,
                               text: 'Favorites'.i18n,
-                              source: 'playlist'));
+                              source: 'playlist_page'));
+                      }
                     },
                     onHold: () {
                       MenuSheet m = MenuSheet();
@@ -531,7 +556,7 @@ class _LibraryTracksState extends State<LibraryTracks> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: <Widget>[
                       Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8.0),
+                        padding: const EdgeInsets.symmetric(vertical: 8.0),
                         child: CircularProgressIndicator(color: Theme.of(context).primaryColor,),
                       )
                     ],
@@ -551,6 +576,11 @@ class _LibraryTracksState extends State<LibraryTracks> {
                   return TrackTile(
                     t,
                     onTap: () {
+                      if (clubroom.ifclub()) {
+                        if (clubroom.ifhost()) {
+                          GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                        }
+                      } else {
                       GetIt.I<AudioPlayerHandler>().playFromTrackList(
                           allTracks,
                           t.id!,
@@ -558,6 +588,7 @@ class _LibraryTracksState extends State<LibraryTracks> {
                               id: 'allTracks',
                               text: 'All offline tracks'.i18n,
                               source: 'offline'));
+                      }
                     },
                     onHold: () {
                       MenuSheet m = MenuSheet();
@@ -924,7 +955,7 @@ class _LibraryArtistsState extends State<LibraryArtists> {
             children: <Widget>[
               if (_loading)
                 Padding(
-                  padding: EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(8.0),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
@@ -1267,11 +1298,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
               return TrackTile(
                 t,
                 onTap: () {
+                  if (clubroom.ifclub()) {
+                    if (clubroom.ifhost()) {
+                      GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                    }
+                  } else {
                   GetIt.I<AudioPlayerHandler>().playFromTrackList(
                       cache.history.reversed.toList(),
                       t.id!,
                       QueueSource(
-                          id: null, text: 'History'.i18n, source: 'history'));
+                          id: null, text: 'History'.i18n, source: 'history_page'));
+                  }
                 },
                 onHold: () {
                   MenuSheet m = MenuSheet();

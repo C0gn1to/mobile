@@ -232,10 +232,11 @@ class _SearchScreenState extends State<SearchScreen> {
                           controller: _controller,
                           textInputAction: TextInputAction.search,
                           onSubmitted: (String s) {
+                                final realcontext = context;
                                 if (s.toLowerCase().contains('gay')) {
                                 if (settings.eastereggsDisabled) {
                                   // If eastereggs are disabled, skip the dialog and directly call _submit
-                                  _submit(context, query: s);
+                                  _submit(realcontext, query: s);
                                   _textFieldFocusNode.unfocus();
                                 } else {
                                   // Show the dialog
@@ -247,24 +248,24 @@ class _SearchScreenState extends State<SearchScreen> {
                                         content: Text('Continuing may result in rainbows and gay people!'.i18n),
                                         actions: <Widget>[
                                           TextButton(
-                                            child: Text('Get me out!'.i18n),
                                             onPressed: () => Navigator.of(context).pop(),
                                                     style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
+         child: Text('Get me out!'.i18n),
                                           ),
                                           TextButton(
-                                            child: Text('Yes I\'m sure!'.i18n),
                                                     style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
+         child: Text('Yes I\'m sure!'.i18n),
                                             onPressed: () async {
+                                              _submit(realcontext, query: s); // Handle the normal submission
                                               Navigator.of(context).pop(); // Close the dialog
-                                              _submit(context, query: s); // Handle the normal submission
                                               _textFieldFocusNode.unfocus();
 
                                               // Add a 10-second delay before calling startRainbowColorUpdates
-                                              await Future.delayed(Duration(seconds: 10));
+                                              await Future.delayed(const Duration(seconds: 10));
                                               settings.startRainbowColorUpdates();
                                             },
                                           )
@@ -345,8 +346,13 @@ class _SearchScreenState extends State<SearchScreen> {
                     icon: const Icon(Typicons.waves),
                     onTap: () async {
                       // No channel for Flow...
+                      if (clubroom.ifclub()) {
+                        if (clubroom.ifhost()) {
+                        }
+                      } else {
                       await GetIt.I<AudioPlayerHandler>()
                           .playFromSmartTrackList(SmartTrackList(id: 'flow'));
+                      }
                     },
                   ),
                   SearchBrowseCard(
@@ -414,6 +420,11 @@ class _SearchScreenState extends State<SearchScreen> {
                     return TrackTile(
                       data,
                       onTap: () {
+                        if (clubroom.ifclub()) {
+                          if (clubroom.ifhost()) {
+                            GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, data.toMediaItem());
+                          }
+                        } else {
                         List<Track> queue = cache.searchHistory!
                             .where((h) => h.type == SearchHistoryItemType.TRACK)
                             .map<Track>((t) => t.data)
@@ -425,6 +436,7 @@ class _SearchScreenState extends State<SearchScreen> {
                                 text: 'Search history'.i18n,
                                 source: 'searchhistory',
                                 id: 'searchhistory'));
+                        }
                       },
                       onHold: () {
                         MenuSheet m = MenuSheet();
@@ -621,6 +633,11 @@ class SearchResultsScreen extends StatelessWidget {
                   return TrackTile(
                     t,
                     onTap: () {
+                      if (clubroom.ifclub()) {
+                        if (clubroom.ifhost()) {
+                          GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                        }
+                      } else {
                       cache.addToSearchHistory(t);
                       GetIt.I<AudioPlayerHandler>().playFromTrackList(
                           results.tracks!,
@@ -628,7 +645,8 @@ class SearchResultsScreen extends StatelessWidget {
                           QueueSource(
                               text: 'Search'.i18n,
                               id: query,
-                              source: 'search'));
+                              source: 'search_page'));
+                      }
                     },
                     onHold: () {
                       MenuSheet m = MenuSheet();
@@ -644,7 +662,7 @@ class SearchResultsScreen extends StatelessWidget {
                             results.tracks!,
                             QueueSource(
                                 id: query,
-                                source: 'search',
+                                source: 'search_page',
                                 text: 'Search'.i18n))));
                   },
                 ),
@@ -860,12 +878,14 @@ class SearchResultsScreen extends StatelessWidget {
                       },
                     ),
                     onTap: () async {
+                      if (clubroom.ifclub()) {
                       //Load entire show, then play
                       List<ShowEpisode> episodes =
                           await deezerAPI.allShowEpisodes(e.show!.id ?? '');
                       await GetIt.I<AudioPlayerHandler>().playShowEpisode(
                           e.show!, episodes,
                           index: episodes.indexWhere((ep) => e.id == ep.id));
+                      }
                     },
                   );
                 }),
@@ -930,8 +950,14 @@ class TrackListScreen extends StatelessWidget {
           return TrackTile(
             t,
             onTap: () {
+              if (clubroom.ifclub()) {
+                if (clubroom.ifhost()) {
+                  GetIt.I<AudioPlayerHandler>().insertQueueItem(-1, t.toMediaItem());
+                }
+              } else {
               GetIt.I<AudioPlayerHandler>()
                   .playFromTrackList(tracks, t.id ?? '', queueSource);
+              }
             },
             onHold: () {
               MenuSheet m = MenuSheet();
@@ -1053,12 +1079,14 @@ class EpisodeListScreen extends StatelessWidget {
                 },
               ),
               onTap: () async {
+                if (clubroom.ifclub()) {
                 //Load entire show, then play
                 List<ShowEpisode> episodes =
                     await deezerAPI.allShowEpisodes(e.show!.id ?? '');
                 await GetIt.I<AudioPlayerHandler>().playShowEpisode(
                     e.show!, episodes,
                     index: episodes.indexWhere((ep) => e.id == ep.id));
+                }
               },
             );
           },

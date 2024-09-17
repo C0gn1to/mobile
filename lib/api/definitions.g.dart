@@ -57,6 +57,34 @@ Map<String, dynamic> _$TrackToJson(Track instance) => <String, dynamic>{
       'playbackDetailsFallback': instance.playbackDetailsFallback,
     };
 
+ClubUser _$ClubUserFromJson(Map<String, dynamic> json) => ClubUser(
+      id: (json['id'] as num).toInt(),
+      sid: json['sid'] as String,
+      username: json['username'] as String,
+      picture: json['picture'] as String,
+      admin: json['admin'] as bool,
+    );
+
+Map<String, dynamic> _$ClubUserToJson(ClubUser instance) => <String, dynamic>{
+      'id': instance.id,
+      'sid': instance.sid,
+      'username': instance.username,
+      'picture': instance.picture,
+      'admin': instance.admin,
+    };
+
+ClubMSG _$ClubMSGFromJson(Map<String, dynamic> json) => ClubMSG(
+      profile: json['profile'] as String,
+      photo: json['photo'] as String,
+      content: json['content'] as String,
+    );
+
+Map<String, dynamic> _$ClubMSGToJson(ClubMSG instance) => <String, dynamic>{
+      'content': instance.content,
+      'profile': instance.profile,
+      'photo': instance.photo,
+    };
+
 Album _$AlbumFromJson(Map<String, dynamic> json) => Album(
       id: json['id'] as String?,
       title: json['title'] as String?,

@@ -38,13 +38,13 @@ android {
     compileOptions {
         // Flag to enable support for the new language APIs
         coreLibraryDesugaringEnabled true
-        // Sets Java compatibility to Java 8
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        // Sets Java compatibility to Java 17
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 
     kotlinOptions {
-        jvmTarget = "1.8"
+        jvmTarget = "17"
     }
 
     defaultConfig {
@@ -89,8 +89,7 @@ android {
 }
 
 dependencies {
-    implementation files('libs/extension-flac.aar') // Required for older Android version
-    implementation("androidx.activity:activity-ktx:1.9.0")
+    implementation files('libs/extension-flac.aar') // Required for older Android versions (< android 10?)
     //implementation group: 'net.jthink', name: 'jaudiotagger', version: '3.0.1' // requires java 8 so no android 6
     implementation group: 'net.jthink', name: 'jaudiotagger', version: '2.2.5'
     implementation group: 'org.nanohttpd', name: 'nanohttpd', version: '2.3.1'

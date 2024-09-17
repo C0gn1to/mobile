@@ -81,7 +81,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
 
       String? url = _versionDownload?.directUrl;
       if (url == null) {
-        print("No URL available for download");
+        print('No URL available for download');
         return;
       }
 
@@ -129,7 +129,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
             if (_error) const ErrorScreen(),
             if (_loading)
               Padding(
-                padding: EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(8.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
@@ -182,7 +182,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
                     Column(children: [
                       ElevatedButton(
                           style: ButtonStyle(
-                            backgroundColor: MaterialStatePropertyAll<Color>(Theme.of(context).primaryColor),
+                            backgroundColor: WidgetStatePropertyAll<Color>(Theme.of(context).primaryColor),
                           ),
                           onPressed: _buttonEnabled
                               ? () {

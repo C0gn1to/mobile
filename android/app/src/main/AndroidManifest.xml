@@ -50,7 +50,7 @@
             android:enabled="true"
             android:exported="false"
             android:stopWithTask="false"
-            android:process=":ReFreezerDownloadService" />
+            android:process=":SaturnDownloadService" />
 
         <activity
             android:name=".MainActivity"

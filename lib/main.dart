@@ -26,17 +26,21 @@ import 'ui/home_screen.dart';
 import 'ui/library.dart';
 import 'ui/login_screen.dart';
 import 'ui/player_bar.dart';
-//import 'ui/updater.dart';
+import 'ui/updater.dart';
 import 'ui/search.dart';
 import 'utils/logging.dart';
 import 'utils/navigator_keys.dart';
 import 'ui/restartable.dart';
+import 'ui/clubs_screen.dart';
+import 'api/clubs.dart';
 
 late Function updateTheme;
 late Function logOut;
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  getIt.registerSingleton<dataMGMT>(dataMGMT());
+  getIt.registerSingleton<SocketManagement>(SocketManagement(address: 'https://clubs.saturn.kim:443', clubRoom: ClubRoom()),);
 
   await Permission.notification.isDenied.then((value) {
     if (value) {
@@ -112,7 +116,7 @@ class _SaturnAppState extends State<SaturnApp> {
       supportedLocales: supportedLocales,
       home: PopScope(
         canPop: false, // Prevent full app exit
-        onPopInvoked: (bool didPop) async {
+        onPopInvokedWithResult: (bool didPop, Object? result) async {
           // When at least 1 layer inside a custom navigator screen,
           // let the back button move back down the custom navigator stack
           if (customNavigatorKey.currentState!.canPop()) {
@@ -243,11 +247,10 @@ class _MainScreenState extends State<MainScreen>
     _prepareQuickActions();
 
     //Check for updates on background
-    /* No automatic updates yet
-    Future.delayed(Duration(seconds: 5), () {
+    //No automatic updates yet
+    Future.delayed(const Duration(seconds: 5), () {
       FreezerVersions.checkUpdate();
     });
-    */
 
     //Restore saved queue
     _loadSavedQueue();

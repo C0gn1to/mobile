@@ -19,6 +19,9 @@ import '../ui/cached_image.dart';
 import '../ui/details_screens.dart';
 import '../ui/error.dart';
 
+import '../api/clubs.dart';
+ClubRoom clubroom = ClubRoom();
+
 class MenuSheet {
   Function navigateCallback;
 
@@ -136,9 +139,18 @@ class MenuSheet {
       {required BuildContext context,
       List<Widget> options = const [],
       Function? onRemove}) {
+
+      List<Widget> queueOptions = [];
+
+      if (clubroom.ifhost()) {
+        queueOptions.add(addToQueueNext(track, context));
+        queueOptions.add(addToQueue(track, context));
+      } else {
+        queueOptions.add(requestSong(track, context));
+      }
+
     showWithTrack(context, track, [
-      addToQueueNext(track, context),
-      addToQueue(track, context),
+      ...queueOptions,
       (cache.checkTrackFavorite(track))
           ? removeFavoriteTrack(track, context, onUpdate: onRemove)
           : addTrackFavorite(track, context),
@@ -157,6 +169,25 @@ class MenuSheet {
   //===================
   // TRACK OPTIONS
   //===================
+    
+    dead() async { 
+    if (clubroom.ifhost()) {
+      return();
+    } else {
+      return();
+    }}
+
+  Widget requestSong(Track t, BuildContext context) => ListTile(
+      title: Text('Request Song'.i18n),
+      leading: const Icon(Icons.music_note),
+      onTap: () async {
+        ClubRoom clubRoom = ClubRoom();
+        SocketManagement socketManagement = SocketManagement(address: 'https://clubs.saturn.kim:443', clubRoom: clubRoom);
+        print('precall');
+        socketManagement.songRequest(t.id.toString());
+        print('aftercall');
+        if (context.mounted) _close(context);
+      });
 
   Widget addToQueueNext(Track t, BuildContext context) => ListTile(
       title: Text('Play next'.i18n),
@@ -713,7 +744,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
       actions: [
         TextButton(
                   style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
           child: Text('Dismiss'.i18n),
           onPressed: () {
@@ -723,7 +754,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
         if (cache.sleepTimer != null)
           TextButton(
                     style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
             child: Text('Cancel current timer'.i18n),
             onPressed: () {
@@ -735,7 +766,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ),
         TextButton(
                   style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
           child: Text('Save'.i18n),
           onPressed: () {
@@ -917,14 +948,14 @@ class _CreatePlaylistDialogState extends State<CreatePlaylistDialog> {
       actions: <Widget>[
         TextButton(
                   style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
           child: Text('Cancel'.i18n),
           onPressed: () => Navigator.of(context).pop(),
         ),
         TextButton(
                   style: ButtonStyle(
-          overlayColor: MaterialStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
          ),
           child: Text(edit ? 'Update'.i18n : 'Create'.i18n),
           onPressed: () async {

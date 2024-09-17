@@ -197,6 +197,48 @@ class Track {
   Map<String, dynamic> toJson() => _$TrackToJson(this);
 }
 
+@JsonSerializable()
+class ClubUser {
+  final int id;
+  final String sid;
+  final String username;
+  final String picture;
+  final bool admin;
+
+  ClubUser({
+    required this.id,
+    required this.sid,
+    required this.username,
+    required this.picture,
+    required this.admin,
+  });
+
+  // Factory method for JSON deserialization
+  factory ClubUser.fromJson(Map<String, dynamic> json) => _$ClubUserFromJson(json);
+
+  // Method for JSON serialization
+  Map<String, dynamic> toJson() => _$ClubUserToJson(this);
+}
+
+@JsonSerializable()
+class ClubMSG {
+  final String content;
+  final String profile;
+  final String photo;
+
+  ClubMSG({
+    required this.profile,
+    required this.photo,
+    required this.content,
+  });
+
+  // Factory method for JSON deserialization
+  factory ClubMSG.fromJson(Map<String, dynamic> json) => _$ClubMSGFromJson(json);
+
+  // Method for JSON serialization
+  Map<String, dynamic> toJson() => _$ClubMSGToJson(this);
+}
+
 enum AlbumType { ALBUM, SINGLE, FEATURED }
 
 @JsonSerializable()

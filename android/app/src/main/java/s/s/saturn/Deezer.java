@@ -30,6 +30,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -299,9 +300,13 @@ public class Deezer {
             //Pad step2 with dots, to get correct length
             while(step2.size()%16 > 0) step2.write(46);
 
+            // Base64-encoded key
+            final String encodedKey = "am82YWV5NmhhaWQyVGVpaA==";
+            // Decode the Base64 string to get the original byte array
+            byte[] decodedKey = Base64.getDecoder().decode(encodedKey);
             //Prepare AES encryption
             Cipher cipher = Cipher.getInstance("AES/ECB/NoPadding");
-            SecretKeySpec key = new SecretKeySpec("jo6aey6haid2Teih".getBytes(), "AES");
+            SecretKeySpec key = new SecretKeySpec(decodedKey, "AES");
             cipher.init(Cipher.ENCRYPT_MODE, key);
             //Encrypt
             StringBuilder step3 = new StringBuilder();

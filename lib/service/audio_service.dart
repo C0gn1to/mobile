@@ -14,7 +14,9 @@ import 'package:logging/logging.dart';
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:saturn/api/clubs.dart';
 import 'package:scrobblenaut/scrobblenaut.dart';
+import 'package:get_it/get_it.dart';
 
 import '../api/cache.dart';
 import '../api/deezer.dart';
@@ -23,6 +25,9 @@ import '../settings.dart';
 import '../translations.i18n.dart';
 import '../ui/android_auto.dart';
 import '../utils/mediaitem_converter.dart';
+
+ClubRoom clubRoom = ClubRoom();
+final SocketManagement socketManagement = GetIt.I<SocketManagement>();
 
 Future<AudioPlayerHandler> initAudioService() async {
   return await AudioService.init(
@@ -47,6 +52,8 @@ class AudioPlayerHandler extends BaseAudioHandler
   int? _audioSession;
   int? _prevAudioSession;
   bool _equalizerOpen = false;
+
+  final AndroidAuto _androidAuto = AndroidAuto(); // Create an instance of AndroidAuto
 
   // for some reason, dart can decide not to respect the 'await' due to weird task sceduling ...
   final Completer<void> _playerInitializedCompleter = Completer<void>();
@@ -73,155 +80,164 @@ class AudioPlayerHandler extends BaseAudioHandler
   Stream<QueueState> get queueStateStream => _queueStateSubject.stream;
   QueueState get queueState => _queueStateSubject.value;
   int currentIndex = 0;
+  int _requestedIndex = -1;
 
-  Future<void> _init() async {
-    await _startSession();
-    _playerInitializedCompleter.complete();
+Future<void> _init() async {
+  await _startSession();
+  _playerInitializedCompleter.complete();
 
-    // Broadcast the current queue when just_audio sequence changes.
-    // Only emit value when MediaItem list contents is different from previous queue
-    _player.sequenceStateStream
-        .map((state) {
-          try {
-            return state?.effectiveSequence
-                .map((source) => source.tag as MediaItem)
-                .toList();
-          } catch (e) {
-            if (e is RangeError) {
-              // This is caused by just_audio not updating the currentIndex first in the _broadcastSequence method.
-              // Because in shufflemode it's out of range after removing items from the playlist.
-              // Might be fixed in future
-              Logger.root.severe(
-                  'RangeError occurred while accessing effectiveSequence: $e');
-              // Return null to indicate that the queue could/should not be broadcasted
-              return null;
-            }
-            rethrow;
+  // Broadcast the current queue when just_audio sequence changes.
+  _player.sequenceStateStream
+      .map((state) {
+        try {
+          return state?.effectiveSequence
+              .map((source) => source.tag as MediaItem)
+              .toList();
+        } catch (e) {
+          if (e is RangeError) {
+            Logger.root.severe('RangeError occurred while accessing effectiveSequence: $e');
+            return null;
           }
-        })
-        .whereType<List<MediaItem>>() // Filter out null values (error occured).
-        .distinct((a, b) => listEquals(a, b))
-        .pipe(queue);
+          rethrow;
+        }
+      })
+      .whereType<List<MediaItem>>()
+      .distinct((a, b) => listEquals(a, b))
+      .pipe(queue);
 
-    // Update current QueueState
-    _queueStateSub = Rx.combineLatest3<List<MediaItem>, PlaybackState,
-            List<int>, QueueState>(
+
+  _queueStateSub = Rx.combineLatest3<List<MediaItem>, PlaybackState, List<int>, QueueState>(
+    queue,
+    playbackState,
+    _player.shuffleIndicesStream.whereType<List<int>>(),
+    (queue, playbackState, shuffleIndices) => QueueState(
       queue,
-      playbackState,
-      _player.shuffleIndicesStream.whereType<List<int>>(),
-      (queue, playbackState, shuffleIndices) => QueueState(
-        queue,
-        playbackState.queueIndex,
-        playbackState.shuffleMode == AudioServiceShuffleMode.all
-            ? shuffleIndices
-            : null,
-        playbackState.repeatMode,
-        playbackState.shuffleMode,
-      ),
-    )
-        .where(
-          (state) =>
-              state.shuffleIndices == null ||
-              state.queue.length == state.shuffleIndices!.length,
-        )
-        .distinct()
-        .listen(_queueStateSubject.add);
+      playbackState.queueIndex,
+      playbackState.shuffleMode == AudioServiceShuffleMode.all ? shuffleIndices : null,
+      playbackState.repeatMode,
+      playbackState.shuffleMode,
+    ),
+  )
+  .where(
+    (state) =>
+        state.shuffleIndices == null ||
+        state.queue.length == state.shuffleIndices!.length,
+  )
+  .distinct()
+  .listen(_queueStateSubject.add);
 
-    // Broadcast media item changes after track or position in queue change,
-    // only emit value when different from previous item
-    _mediaItemSub = Rx.combineLatest3<int?, List<MediaItem>, bool, MediaItem?>(
-        _player.currentIndexStream, queue, _player.shuffleModeEnabledStream,
-        (index, queue, shuffleModeEnabled) {
-      // Don't broadcast while shuffling to avoid intermediate MediaItem change
-      if (_rearranging) return null;
+  _mediaItemSub = Rx.combineLatest3<int?, List<MediaItem>, bool, MediaItem?>(
+      _player.currentIndexStream, queue, _player.shuffleModeEnabledStream,
+      (index, queue, shuffleModeEnabled) {
+    if (_rearranging) return null;
 
-      final queueIndex = _getQueueIndex(
-        index ?? 0,
-        shuffleModeEnabled: shuffleModeEnabled,
-      );
-      return (queueIndex < queue.length) ? queue[queueIndex] : null;
-    }).whereType<MediaItem>().distinct().listen((item) {
-      // Change track
-      mediaItem.add(item);
+    // Prevent broadcasting first item from new queue when other index is requested
+    if (_requestedIndex != -1 && _requestedIndex != index) return null;
 
-      final int queueIndex = queue.value.indexOf(item);
-      final int queueLength = queue.value.length;
+    final queueIndex = _getQueueIndex(
+      index ?? 0,
+      shuffleModeEnabled: shuffleModeEnabled,
+    );
+    return (queueIndex < queue.length) ? queue[queueIndex] : null;
+  }).whereType<MediaItem>().distinct().listen((item) async {
+    mediaItem.add(item);
 
-      if (queueLength - queueIndex == 1) {
-        Logger.root.info('loaded last track of queue, adding more tracks');
-        _onQueueEnd();
+    final int queueIndex = queue.value.indexOf(item);
+    final int queueLength = queue.value.length;
+
+    if (queueLength - queueIndex == 1) {
+      Logger.root.info('loaded last track of queue, adding more tracks');
+      _onQueueEnd();
+    }
+
+    //its a fucking saturday ive been at this for a good 9 hours no judgement pls CORRECTION 10 and half
+    var savedqueueindex = 0;
+    if (queueIndex !=  savedqueueindex) {
+      socketManagement.sync();
+      socketManagement.playIndex(queueIndex);
+      savedqueueindex = queueIndex;
+      socketManagement.trackEnd(queueIndex, queueLength);
+    }
+
+    _saveQueueToFile();
+    _addToHistory(item);
+  });
+
+  // Propagate all events from the audio player to AudioService clients.
+  _player.playbackEventStream
+      .listen(_broadcastState, onError: _playbackError);
+
+  _player.shuffleModeEnabledStream
+      .listen((enabled) => _broadcastState(_player.playbackEvent));
+
+  _player.loopModeStream
+      .listen((mode) => _broadcastState(_player.playbackEvent));
+
+  _player.processingStateStream.listen((state) {
+    if (state == ProcessingState.completed && _player.playing) {
+      stop();
+      _player.seek(Duration.zero, index: 0);
+    }
+  });
+
+  _player.androidAudioSessionIdStream.listen((session) {
+    if (!settings.enableEqualizer) return;
+
+    _prevAudioSession = _audioSession;
+    _audioSession = session;
+    if (_audioSession == null) return;
+
+    if (!_equalizerOpen) {
+      EqualizerFlutter.open(session!);
+      _equalizerOpen = true;
+      return;
+    }
+
+    if (_prevAudioSession != _audioSession) {
+      if (_prevAudioSession != null) {
+        EqualizerFlutter.removeAudioSessionId(_prevAudioSession!);
       }
+      EqualizerFlutter.setAudioSessionId(_audioSession!);
+    }
+  });
 
-      //Save queue
-      _saveQueueToFile();
-      //Add to history
-      _addToHistory(item);
-    });
+  AudioService.position.listen((position) {
+    if (mediaItem.value == null || !playbackState.value.playing) {
+      return;
+    }
 
-    // Propagate all events from the audio player to AudioService clients.
-    _player.playbackEventStream
-        .listen(_broadcastState, onError: _playbackError);
+    if (position.inSeconds > (mediaItem.value!.duration!.inSeconds * 0.75)) {
+      if (cache.loggedTrackId == mediaItem.value!.id) return;
+      cache.loggedTrackId = mediaItem.value!.id;
+      cache.save();
 
-    _player.shuffleModeEnabledStream
-        .listen((enabled) => _broadcastState(_player.playbackEvent));
-
-    _player.loopModeStream
-        .listen((mode) => _broadcastState(_player.playbackEvent));
-
-    _player.processingStateStream.listen((state) {
-      if (state == ProcessingState.completed && _player.playing) {
-        stop();
-        _player.seek(Duration.zero, index: 0);
+      if (settings.logListen) {
+        deezerAPI.logListen(mediaItem.value!.id, queueSource);
       }
-    });
-
-    //Audio session
-    _player.androidAudioSessionIdStream.listen((session) {
-      if (!settings.enableEqualizer) return;
-
-      //Save
-      _prevAudioSession = _audioSession;
-      _audioSession = session;
-      if (_audioSession == null) return;
-
-      //Open EQ
-      if (!_equalizerOpen) {
-        EqualizerFlutter.open(session!);
-        _equalizerOpen = true;
-        return;
-      }
-
-      //Change session id
-      if (_prevAudioSession != _audioSession) {
-        if (_prevAudioSession != null) {
-          EqualizerFlutter.removeAudioSessionId(_prevAudioSession!);
-        }
-        EqualizerFlutter.setAudioSessionId(_audioSession!);
-      }
-    });
-
-    // When 75% of item played, save loggedTrackId to cache & log listen (if enabled)
-    AudioService.position.listen((position) {
-      if (mediaItem.value == null || !playbackState.value.playing) {
-        return;
-      }
-
-      if (position.inSeconds > (mediaItem.value!.duration!.inSeconds * 0.75)) {
-        if (cache.loggedTrackId == mediaItem.value!.id) return;
-        cache.loggedTrackId = mediaItem.value!.id;
-        cache.save();
-
-        //Log to Deezer
-        if (settings.logListen) {
-          deezerAPI.logListen(mediaItem.value!.id);
-        }
-      }
-    });
-  }
+    }
+  });
+}
 
   @override
   Future<void> play() async {
+    if (clubRoom.ifhost()) {
     _player.play();
+    }
+
+    socketManagement.sync();
+
+    //Scrobble to LastFM
+    MediaItem? newMediaItem = mediaItem.value;
+    if (newMediaItem != null && newMediaItem.id != _loggedTrackId) {
+      // Add to history if new track
+      _addToHistory(newMediaItem);
+    }
+  }
+
+  Future<void> playnoauth() async {
+    _player.play();
+
+    socketManagement.sync();
 
     //Scrobble to LastFM
     MediaItem? newMediaItem = mediaItem.value;
@@ -232,23 +248,38 @@ class AudioPlayerHandler extends BaseAudioHandler
   }
 
   @override
-  Future<void> playFromMediaId(String mediaId,
-      [Map<String, dynamic>? extras]) async {
+  Future<void> playFromMediaId(String mediaId, [Map<String, dynamic>? extras]) async {
+
+    // Check if the mediaId is for Android Auto
+    if (mediaId.startsWith(AndroidAuto.prefix)) {
+      // Forward the event to Android Auto
+      await _androidAuto.playItem(mediaId);
+      return;
+    }
+
+    // Handle other mediaIds by seeking to the appropriate item in the queue
     final index = queue.value.indexWhere((item) => item.id == mediaId);
     if (index != -1) {
-      _player.seek(
+      await _player.seek(
         Duration.zero,
-        index:
-            _player.shuffleModeEnabled ? _player.shuffleIndices![index] : index,
+        index: _player.shuffleModeEnabled ? _player.shuffleIndices![index] : index,
       );
     } else {
-      Logger.root.severe('playFromMediaId: MediaItem not found');
+      Logger.root.severe('playFromMediaId: MediaItem not found for mediaId: $mediaId');
     }
   }
 
   @override
   Future<void> pause() async {
+    if (clubRoom.ifhost()) {
     _player.pause();
+    }
+    socketManagement.sync();
+  }
+
+  Future<void> pausenoauth() async {
+    _player.pause();
+    socketManagement.sync();
   }
 
   @override
@@ -258,6 +289,15 @@ class AudioPlayerHandler extends BaseAudioHandler
     await super.stop();
     Logger.root.info('saving queue');
     _saveQueueToFile();
+  }
+
+  Future<bool> playing() async {
+    return(_player.playing);
+  }
+
+  Future<Duration> position() async {
+    final position = _player.position;
+    return(position);
   }
 
   @override
@@ -275,8 +315,15 @@ class AudioPlayerHandler extends BaseAudioHandler
 
   @override
   Future<void> insertQueueItem(int index, MediaItem mediaItem) async {
+    bool next = false;
     //-1 == play next
+    if (index == -1) {
+      next = true;
+    } else {
+      next = false;
+    }
     if (index == -1) index = currentIndex + 1;
+    socketManagement.addQueueID(mediaItem.id, next);
     final res = await _itemToSource(mediaItem);
     if (res != null) {
       await _playlist.insert(index, res);
@@ -293,6 +340,11 @@ class AudioPlayerHandler extends BaseAudioHandler
         mediaItem.add(null);
       }
     }
+  }
+
+  Future<void> clearQueue() async {
+    await updateQueue([]);
+    await removeSavedQueueFile();
   }
 
   @override
@@ -322,19 +374,26 @@ class AudioPlayerHandler extends BaseAudioHandler
   }
 
   @override
-  Future<void> skipToNext() => _player.seekToNext();
+  skipToNext() async {
+    socketManagement.sync();
+    socketManagement.playIndex(_player.nextIndex as int);
+    _player.seekToNext();
+  }
 
   @override
-  Future<void> skipToPrevious() async {
+  skipToPrevious() async {
     if ((_player.position.inSeconds) <= 5) {
+      socketManagement.sync();
+      socketManagement.playIndex(_player.previousIndex as int);
       _player.seekToPrevious();
     } else {
       _player.seek(Duration.zero);
+      socketManagement.sync();
     }
   }
 
   @override
-  Future<void> skipToQueueItem(int index) async {
+  skipToQueueItem(int index) async {
     if (index < 0 || index >= _playlist.children.length) return;
 
     _player.seek(
@@ -342,10 +401,15 @@ class AudioPlayerHandler extends BaseAudioHandler
       index:
           _player.shuffleModeEnabled ? _player.shuffleIndices![index] : index,
     );
+    socketManagement.sync();
+    socketManagement.playIndex(index);
   }
 
-  @override
-  Future<void> seek(Duration position) => _player.seek(position);
+  @override 
+  seek(Duration position) async {
+    _player.seek(position);
+    socketManagement.sync();
+  }
 
   @override
   Future<void> setRepeatMode(AudioServiceRepeatMode repeatMode) async {
@@ -356,7 +420,7 @@ class AudioPlayerHandler extends BaseAudioHandler
   @override
   Future<void> setShuffleMode(AudioServiceShuffleMode shuffleMode) async {
     final enabled = shuffleMode == AudioServiceShuffleMode.all;
-    _rearranging = enabled;
+    _rearranging = true;
     await _player.setShuffleModeEnabled(enabled);
     _rearranging = false;
     if (enabled) {
@@ -381,8 +445,7 @@ class AudioPlayerHandler extends BaseAudioHandler
     Map<String, dynamic>? options,
   ]) async {
     //Android audio callback
-    AndroidAuto androidAuto = AndroidAuto();
-    return androidAuto.getScreen(parentMediaId);
+    return _androidAuto.getScreen(parentMediaId);
   }
 
   //----------------------------------------------
@@ -409,44 +472,79 @@ class AudioPlayerHandler extends BaseAudioHandler
   }
 
   /// Broadcasts the current state to all clients.
-  void _broadcastState(PlaybackEvent event) {
-    final playing = _player.playing;
-    currentIndex = _getQueueIndex(_player.currentIndex ?? 0,
-        shuffleModeEnabled: _player.shuffleModeEnabled);
+Future<void> _broadcastState(PlaybackEvent event) async {
+  final playing = _player.playing;
+  currentIndex = _getQueueIndex(_player.currentIndex ?? 0,
+      shuffleModeEnabled: _player.shuffleModeEnabled);
 
-    playbackState.add(
-      playbackState.value.copyWith(
-        controls: [
-          MediaControl.skipToPrevious,
-          if (playing) MediaControl.pause else MediaControl.play,
-          MediaControl.skipToNext,
-          // Custom Stop
-          const MediaControl(
-              androidIcon: 'drawable/ic_action_stop',
-              label: 'stop',
-              action: MediaAction.stop),
-        ],
-        systemActions: const {
+  // Check if the current user is allowed to control the media
+  bool canControlMedia = await _canControlMedia();
+
+  // Define controls based on whether the user is allowed to control media
+  var controls = [
+    if (!clubRoom.ifclub()) MediaControl.skipToPrevious,
+    if (playing) MediaControl.pause else MediaControl.play,
+    if (!clubRoom.ifclub()) MediaControl.skipToNext,
+     // Custom Stop
+      const MediaControl(
+        androidIcon: 'drawable/ic_action_stop',
+        label: 'stop',
+        action: MediaAction.stop,
+      ),
+  ];
+
+  if (canControlMedia) {
+    controls = [
+    if (!clubRoom.ifclub()) MediaControl.skipToPrevious,
+    if ( playing) MediaControl.pause else MediaControl.play,
+    if (!clubRoom.ifclub()) MediaControl.skipToNext,
+     // Custom Stop
+      const MediaControl(
+        androidIcon: 'drawable/ic_action_stop',
+        label: 'stop',
+        action: MediaAction.stop,
+      ),
+  ];
+  } else {
+    controls = [];
+  }
+
+  // Define system actions based on whether the user is allowed to control the media
+  final Set<MediaAction> systemActions = canControlMedia
+      ? {
           MediaAction.seek,
           MediaAction.seekForward,
-          MediaAction.seekBackward
-        },
-        androidCompactActionIndices: const [0, 1, 2],
-        processingState: const {
-          ProcessingState.idle: AudioProcessingState.idle,
-          ProcessingState.loading: AudioProcessingState.loading,
-          ProcessingState.buffering: AudioProcessingState.buffering,
-          ProcessingState.ready: AudioProcessingState.ready,
-          ProcessingState.completed: AudioProcessingState.completed,
-        }[_player.processingState]!,
-        playing: playing,
-        updatePosition: _player.position,
-        bufferedPosition: _player.bufferedPosition,
-        speed: _player.speed,
-        queueIndex: currentIndex,
-      ),
-    );
+          MediaAction.seekBackward,
+        }
+      : {}; // No system actions if not allowed
+
+  playbackState.add(
+    playbackState.value.copyWith(
+      controls: controls,
+      systemActions: systemActions,
+      androidCompactActionIndices: const [0, 1, 2],
+      processingState: const {
+        ProcessingState.idle: AudioProcessingState.idle,
+        ProcessingState.loading: AudioProcessingState.loading,
+        ProcessingState.buffering: AudioProcessingState.buffering,
+        ProcessingState.ready: AudioProcessingState.ready,
+        ProcessingState.completed: AudioProcessingState.completed,
+      }[_player.processingState]!,
+      playing: playing,
+      updatePosition: _player.position,
+      bufferedPosition: _player.bufferedPosition,
+      speed: _player.speed,
+      queueIndex: currentIndex,
+    ),
+  );
+}
+
+Future<bool> _canControlMedia() async {
+  if (clubRoom.ifclub()) {
+    return clubRoom.ifhost();
   }
+  return true;
+}
 
   /// Resolve the effective queue index taking into account shuffleMode.
   int _getQueueIndex(int currentIndex, {bool shuffleModeEnabled = false}) {
@@ -534,6 +632,8 @@ class AudioPlayerHandler extends BaseAudioHandler
   /// Load new queue of MediaItems to just_audio & seek to given index & position
   Future _loadQueueAtIndex(List<MediaItem> newQueue, int index,
       {Duration position = Duration.zero}) async {
+      //Set requested index
+    _requestedIndex = index;
     //Clear old playlist from just_audio
     await _playlist.clear();
 
@@ -546,13 +646,16 @@ class AudioPlayerHandler extends BaseAudioHandler
     } catch (e, st) {
       Logger.root.severe('Error loading tracks', e, st);
     }
+    _requestedIndex = -1;
   }
 
   //Replace queue, play specified item index
   Future _loadQueueAndPlayAtIndex(
       QueueSource newQueueSource, List<MediaItem> newQueue, int index) async {
     // Pauze platback if playing (Player seems to crash on some devices otherwise)
-    await pause();
+    await pause();  
+    //Set requested index
+    _requestedIndex = index;
 
     queueSource = newQueueSource;
     await updateQueue(newQueue);
@@ -560,6 +663,30 @@ class AudioPlayerHandler extends BaseAudioHandler
     await skipToQueueItem(index);
 
     play();
+    _requestedIndex = -1;
+  }
+
+  //Replace queue, play specified item index
+  Future _loadclubqueue(
+      QueueSource newQueueSource, List<MediaItem> newQueue, int index, bool playing, {Duration position = Duration.zero}) async {
+    //Clear old playlist from just_audio
+    await _playlist.clear();
+
+    // Convert new queue to AudioSources playlist & add to just_audio (Concurrent approach)
+    await _playlist.addAll(await _itemsToSources(newQueue));
+    queueSource = newQueueSource;
+
+    _player.setLoopMode(LoopMode.values[(0)]);
+
+    //Seek to correct position & index
+    try {
+      await _player.seek(position, index: index);
+    } catch (e, st) {
+      Logger.root.severe('Error loading tracks', e, st);
+    }
+    if (playing) {
+      playnoauth();
+    }
   }
 
   /// Attempt to load more tracks when queue ends
@@ -638,9 +765,12 @@ class AudioPlayerHandler extends BaseAudioHandler
     cache.save();
   }
 
-  //Get queue save file path
+  // Get queue save file path
   Future<String> _getQueueFilePath() async {
-    Directory dir = await getApplicationDocumentsDirectory();
+    Directory? dir = await getExternalStorageDirectory();
+    if (dir == null) {
+      throw Exception('External storage directory is not available');
+    }
     return p.join(dir.path, 'playback.json');
   }
 
@@ -779,7 +909,7 @@ class AudioPlayerHandler extends BaseAudioHandler
   //Play track from album
   Future playFromAlbum(Album album, String trackId) async {
     await playFromTrackList(album.tracks ?? [], trackId,
-        QueueSource(id: album.id, text: album.title, source: 'album'));
+        QueueSource(id: album.id, text: album.title, source: 'album_page'));
   }
 
   //Play mix by track
@@ -791,7 +921,7 @@ class AudioPlayerHandler extends BaseAudioHandler
         QueueSource(
             id: trackId,
             text: 'Mix based on'.i18n + ' $trackTitle',
-            source: 'mix'));
+            source: 'track_mix_contextual'));
   }
 
   //Play from artist top tracks
@@ -801,19 +931,19 @@ class AudioPlayerHandler extends BaseAudioHandler
         tracks,
         trackId,
         QueueSource(
-            id: artist.id, text: 'Top ${artist.name}', source: 'topTracks'));
+            id: artist.id, text: 'Top ${artist.name}', source: 'artist_top'));
   }
 
   Future playFromPlaylist(Playlist playlist, String trackId) async {
     await playFromTrackList(playlist.tracks ?? [], trackId,
-        QueueSource(id: playlist.id, text: playlist.title, source: 'playlist'));
+        QueueSource(id: playlist.id, text: playlist.title, source: 'playlist_page'));
   }
 
   //Play episode from show, load whole show as queue
   Future playShowEpisode(Show show, List<ShowEpisode> episodes,
       {int index = 0}) async {
     QueueSource showQueueSource =
-        QueueSource(id: show.id, text: show.name, source: 'show');
+        QueueSource(id: show.id, text: show.name, source: 'show_page');
     //Generate media items
     List<MediaItem> episodeQueue =
         episodes.map<MediaItem>((e) => e.toMediaItem(show)).toList();
@@ -833,6 +963,39 @@ class AudioPlayerHandler extends BaseAudioHandler
     await _loadQueueAndPlayAtIndex(trackQueueSource, trackQueue,
         trackQueue.indexWhere((m) => m.id == trackId));
   }
+
+  Future LoadClubQueue(
+      List<Track> tracks, String trackId, QueueSource trackQueueSource, bool playing, int pos, int timestamp) async {
+    //Generate media items
+    List<MediaItem> trackQueue =
+        tracks.map<MediaItem>((track) => track.toMediaItem()).toList();
+    if (playing) {
+      pos += DateTime.now().millisecondsSinceEpoch - timestamp;
+    } 
+    final Duration lastPos = Duration(milliseconds: pos);
+    //Load and play
+    await _loadclubqueue(trackQueueSource, trackQueue, 
+        trackQueue.indexWhere((m) => m.id == trackId),
+        playing,
+        position: lastPos,
+        );
+  }
+
+Future<void> ClubSync(bool playing, int pos, int timestamp) async {
+  if (playing) {
+    await playnoauth();
+  } else {
+    pausenoauth();
+  }
+  final currentTime = DateTime.now().millisecondsSinceEpoch;
+  final latency = currentTime - timestamp;
+  if (playing) {
+    // Adjust position by adding the latency to account for the delay
+    pos += latency;
+  }
+  _player.seek(Duration(milliseconds: pos));
+}
+
 
   //Load smart track list as queue, start from beginning
   Future playFromSmartTrackList(SmartTrackList stl) async {

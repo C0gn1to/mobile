@@ -6,6 +6,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
+import java.util.Base64;
 
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
@@ -74,7 +75,7 @@ public class DeezerDecryptor {
      * @return Decryption key for Track
      */
     static byte[] getKey(String id) {
-        final String secret = "g4el58wc0zvf9na1";
+        final String secret = new String(Base64.getDecoder().decode("ZzRlbDU4d2MwenZmOW5hMQ=="));
         try {
             MessageDigest md5 = MessageDigest.getInstance("MD5");
             md5.update(id.getBytes());

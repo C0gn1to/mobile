@@ -192,7 +192,7 @@ class _HomePageScreenState extends State<HomePageScreen> {
     if (_homePage == null) {
       return Center(
           child: Padding(
-        padding: EdgeInsets.all(8.0),
+        padding: const EdgeInsets.all(8.0),
         child: CircularProgressIndicator(color: Theme.of(context).primaryColor,),
       ));
     }
@@ -312,16 +312,26 @@ class HomePageItemWidget extends StatelessWidget {
         return FlowTrackListTile(
           item.value,
           onTap: () {
-            DeezerFlow deezerFlow = item.value;
-            GetIt.I<AudioPlayerHandler>().playFromSmartTrackList(SmartTrackList(
+            if (clubroom.ifclub()) {
+              if (clubroom.ifhost()) {
+              }
+            } else {
+                DeezerFlow deezerFlow = item.value;
+                GetIt.I<AudioPlayerHandler>().playFromSmartTrackList(SmartTrackList(
                 id: 'flow', title: deezerFlow.title, flowType: deezerFlow.id));
+            }
           },
         );
       case HomePageItemType.SMARTTRACKLIST:
         return SmartTrackListTile(
           item.value,
           onTap: () {
-            GetIt.I<AudioPlayerHandler>().playFromSmartTrackList(item.value);
+            if (clubroom.ifclub()) {
+              if (clubroom.ifhost()) {
+              }
+            } else {
+              GetIt.I<AudioPlayerHandler>().playFromSmartTrackList(item.value);
+            }
           },
         );
       case HomePageItemType.ALBUM:

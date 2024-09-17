@@ -167,7 +167,7 @@ class ArtistTile extends StatelessWidget {
               ),
               CachedImage(
                 url: artist.picture?.thumb ?? '',
-                circular: true,
+               circular: true,
                 width: 100,
               ),
               Container(

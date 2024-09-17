@@ -10,6 +10,9 @@ import '../ui/router.dart';
 import 'cached_image.dart';
 import 'player_screen.dart';
 
+import '../api/clubs.dart';
+ClubRoom clubroom = ClubRoom();
+
 class PlayerBar extends StatefulWidget {
   const PlayerBar({super.key});
 
@@ -34,38 +37,17 @@ class _PlayerBarState extends State<PlayerBar> {
     var focusNode = FocusNode();
     return GestureDetector(
       key: UniqueKey(),
-      /* Old swipe detection, seems less efficient...
-      onHorizontalDragUpdate: (details) async {
-        if (_gestureRegistered) return;
-        const double sensitivity = 12.69;
-        //Right swipe
-        _gestureRegistered = true;
-        if (details.delta.dx > sensitivity) {
-          await GetIt.I<AudioPlayerHandlerImpl>().skipToPrevious();
-        }
-        //Left
-        if (details.delta.dx < -sensitivity) {
-          await GetIt.I<AudioPlayerHandlerImpl>().skipToNext();
-        }
-        _gestureRegistered = false;
-        return;
-      },
-      onVerticalDragUpdate: (DragUpdateDetails details) {
-        if (details.delta.dy < 8) {
-          Navigator.of(context).push(SlideBottomRoute(widget: PlayerScreen()));
-          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            systemNavigationBarColor:
-                settings.themeData.scaffoldBackgroundColor,
-          ));
-        }
-      },*/
       onHorizontalDragEnd: (DragEndDetails details) async {
         if ((details.primaryVelocity ?? 0) < -100) {
           // Swiped left
+        if (clubroom.ifhost()) {
           await GetIt.I<AudioPlayerHandler>().skipToPrevious();
+        }
         } else if ((details.primaryVelocity ?? 0) > 100) {
           // Swiped right
+        if (clubroom.ifhost()) {
           await GetIt.I<AudioPlayerHandler>().skipToNext();
+        }
         }
       },
       onVerticalDragEnd: (DragEndDetails details) async {
@@ -175,6 +157,9 @@ class PrevNextButton extends StatelessWidget {
               onPressed: null,
             );
           }
+          ClubRoom clubroom = ClubRoom();
+          while (true) {
+          if (clubroom.ifhost()) {
           return IconButton(
             icon: Icon(
               Icons.skip_next,
@@ -182,7 +167,17 @@ class PrevNextButton extends StatelessWidget {
             ),
             iconSize: size,
             onPressed: () => GetIt.I<AudioPlayerHandler>().skipToNext(),
+          );} else {
+          return IconButton(
+            icon: Icon(
+              Icons.skip_next,
+              semanticLabel: 'Play next'.i18n,
+            ),
+            iconSize: size,
+            onPressed: null,
           );
+          }
+        }
         }
         if (prev) {
           if (!(queueState?.hasPrevious ?? false)) {
@@ -192,6 +187,7 @@ class PrevNextButton extends StatelessWidget {
                 width: 0,
               );
             }
+            
             return IconButton(
               icon: Icon(
                 Icons.skip_previous,
@@ -201,6 +197,8 @@ class PrevNextButton extends StatelessWidget {
               onPressed: null,
             );
           }
+          while (true) {
+          if (clubroom.ifhost()) {
           return IconButton(
             icon: Icon(
               Icons.skip_previous,
@@ -209,6 +207,17 @@ class PrevNextButton extends StatelessWidget {
             iconSize: size,
             onPressed: () => GetIt.I<AudioPlayerHandler>().skipToPrevious(),
           );
+          } else {
+            return IconButton(
+              icon: Icon(
+                Icons.skip_previous,
+                semanticLabel: 'Play previous'.i18n,
+              ),
+              iconSize: size,
+              onPressed: null,
+            );
+          }
+          }
         }
         return Container();
       },
@@ -267,10 +276,15 @@ class _PlayPauseButtonState extends State<PlayPauseButton> with SingleTickerProv
                 semanticLabel: playing ? 'Pause'.i18n : 'Play'.i18n,
               ),
               iconSize: widget.size,
-              onPressed:
-                  playing ? () => GetIt.I<AudioPlayerHandler>().pause() : () => GetIt.I<AudioPlayerHandler>().play());
-        }
-
+              onPressed: () async { 
+            if (clubroom.ifhost()) {
+              playing ? await GetIt.I<AudioPlayerHandler>().pause() : await GetIt.I<AudioPlayerHandler>().play();
+            } else {
+              null;
+            }
+              }
+    );
+  }
         switch (processingState) {
           //Loading, connecting, rewinding...
           case AudioProcessingState.buffering:
