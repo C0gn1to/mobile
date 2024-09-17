@@ -43,14 +43,11 @@ jobs:
               cd ..
             done
             flutter pub get
-            flutter build apk --release --no-shrink \
-              --dart-define=KEYSTORE_PASSWORD=${KEYSTORE_PASSWORD} \
-              --dart-define=KEY_PASSWORD=${KEY_PASSWORD} \
-              --dart-define=KEY_ALIAS=${KEY_ALIAS} \
-              --dart-define=KEYSTORE_PATH=android/app/saturn.jks
+            flutter build apk --release
           "
 
         env:
+          KEYSTORE_PATH: android/app/saturn.jks
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
