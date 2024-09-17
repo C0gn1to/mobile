@@ -21,6 +21,17 @@ jobs:
 
       - name: Prepare Keystore
         run: |
+          mkdir -p android/app
+          echo "$KEYSTORE_BASE64" | base64 --decode > android/app/saturn.jks
+          echo "storeFile=android/app/saturn.jks" > key.properties
+          echo "storePassword=${{ secrets.KEYSTORE_PASSWORD }}" >> key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> key.properties
+        env:
+          KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+
+      - name: Prepare Keystore
+        run: |
           echo "$KEYSTORE_BASE64" | base64 --decode > android/app/saturn.jks
 
         env:
@@ -45,12 +56,6 @@ jobs:
             flutter pub get
             flutter build apk --release
           "
-
-        env:
-          KEYSTORE_PATH: android/app/saturn.jks
-          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-          KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
