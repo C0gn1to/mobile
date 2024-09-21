@@ -14,6 +14,16 @@ import '../settings.dart';
 import '../translations.i18n.dart';
 import 'home_screen.dart';
 
+extension ElementExtension on dom.Element {
+  dom.Element? nextElementSiblingWhere(bool Function(dom.Element) test) {
+    dom.Element? sibling = this.nextElementSibling;
+    while (sibling != null && !test(sibling)) {
+      sibling = sibling.nextElementSibling;
+    }
+    return sibling;
+  }
+}
+
 class LoginWidget extends StatefulWidget {
   final Function? callback;
   const LoginWidget({required this.callback, super.key});
@@ -26,80 +36,50 @@ class _LoginWidgetState extends State<LoginWidget> {
   String? _arl;
   String? _error;
 
-  Future<String?> fetchARLToken() async {
+  Future<String?> fetchARLTokenRentry() async {
   try {
-    // Fetch the HTML content from the URL
     final response = await http.get(Uri.parse('https://rentry.org/firehawk52'));
 
     if (response.statusCode == 200) {
       final document = html.parse(response.body);
+      final h3Element = document.querySelector('h3#deezer-arls');
+      final ntableWrapper = h3Element?.nextElementSiblingWhere((e) => e.className == 'ntable-wrapper');
+      final tableElement = ntableWrapper?.querySelector('table.ntable');
+      final tbodyElement = tableElement?.querySelector('tbody');
+      final firstRow = tbodyElement?.querySelector('tr');
+      final cells = firstRow?.querySelectorAll('td');
 
-      // Find the <h3> element with the id "deezer-arls"
-      dom.Element? h3Element = document.querySelector('h3#deezer-arls');
-
-      if (h3Element != null) {
-        print('Found <h3 id="deezer-arls">'); // Debug statement
-
-        // Find the next sibling <div> with class "ntable-wrapper"
-        dom.Element? ntableWrapper = h3Element.nextElementSibling;
-        while (ntableWrapper != null && ntableWrapper.className != 'ntable-wrapper') {
-          ntableWrapper = ntableWrapper.nextElementSibling;
-        }
-
-        if (ntableWrapper != null) {
-          print('Found the <div class="ntable-wrapper">'); // Debug statement
-
-          // Now find the <table> inside this div
-          dom.Element? tableElement = ntableWrapper.querySelector('table.ntable');
-          if (tableElement != null) {
-            print('Found the <table class="ntable">'); // Debug statement
-
-            // Locate the <tbody>
-            dom.Element? tbodyElement = tableElement.querySelector('tbody');
-            if (tbodyElement != null) {
-              print('Found <tbody> inside the table');  // Debug statement
-
-              // Get the first <tr> element
-              dom.Element? firstRow = tbodyElement.querySelector('tr');
-              if (firstRow != null) {
-                List<dom.Element> cells = firstRow.querySelectorAll('td');
-                print('Number of <td> elements in the first row: ${cells.length}');  // Debug statement
-
-                if (cells.length >= 4) {
-                  dom.Element? codeElement = cells[3].querySelector('code');
-                  if (codeElement != null) {
-                    print('Found <code> inside the 4th <td>');  // Debug statement
-                    return codeElement.text.trim();
-                  } else {
-                    print('Failed to find <code> inside the 4th <td>');  // Debug statement
-                  }
-                } else {
-                  print('Not enough <td> elements in the first row');  // Debug statement
-                }
-              } else {
-                print('Failed to find the first <tr>');  // Debug statement
-              }
-            } else {
-              print('Failed to find <tbody> in the table');  // Debug statement
-            }
-          } else {
-            print('Failed to find <table> inside <div class="ntable-wrapper">');  // Debug statement
-          }
-        } else {
-          print('Failed to find <div class="ntable-wrapper"> after <h3 id="deezer-arls">');  // Debug statement
-        }
-      } else {
-        print('Failed to find <h3 id="deezer-arls">');  // Debug statement
+      if (cells != null && cells.length >= 4) {
+        final codeElement = cells[3].querySelector('code');
+        return codeElement?.text.trim();
       }
-
-      throw Exception('Failed to find the required table or token.');
     } else {
       throw Exception('Failed to load the page. Status code: ${response.statusCode}');
     }
   } catch (e) {
     print('Error fetching ARL token: $e');
-    return null;
   }
+  return null;
+}
+
+  Future<String?> fetchARLTokenTelegram() async {
+  try {
+    final response = await http.get(Uri.parse('https://t.me/firehawk52official/85848/85851'));
+    if (response.statusCode == 200) {
+      final document = html.parse(response.body);
+      final metaTags = document.head?.getElementsByTagName('meta') ?? [];
+      for (var element in metaTags) {
+        final content = element.attributes['content'];
+        if (content != null && content.contains('ARL:')) {
+          final arlToken = content.split('\n').skipWhile((line) => !line.trim().startsWith('ARL:')).skip(1).takeWhile((line) => line.trim().isNotEmpty).join().trim();
+          return arlToken;
+        }
+      }
+    }
+  } catch (e) {
+    // Handle the exception
+  }
+  return null;
 }
 
   //Initialize deezer etc
@@ -118,14 +98,30 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   // Call _init()
   void _start() async {
-    settings.arl = await fetchARLToken(); // Fetch ARL from the website
-    if (settings.arl != null) {
+  settings.arl = await fetchARLTokenRentry(); // Fetch ARL from the website
+  if (settings.arl != null) {
+    bool loginSuccess = await _tryLogin();
+    if (loginSuccess) {
       await _init();
       if (widget.callback != null) widget.callback!();
     } else {
-      errorDialog();  // Show error dialog if ARL fetching fails
+      settings.arl = await fetchARLTokenTelegram();
+      if (settings.arl != null) {
+        loginSuccess = await _tryLogin();
+        if (loginSuccess) {
+          await _init();
+          if (widget.callback != null) widget.callback!();
+        } else {
+          errorDialog();  // Show error dialog if ARL fetching fails
+        }
+      } else {
+        errorDialog();  // Show error dialog if ARL fetching fails
+      }
     }
+  } else {
+    errorDialog();  // Show error dialog if ARL fetching fails
   }
+}
 
   //Check if deezer available in current country
   void _checkAvailability() async {
@@ -150,12 +146,51 @@ class _LoginWidgetState extends State<LoginWidget> {
     }
   }
 
-  /* No idea why this is needed, seems to trigger superfluous _start() execution...
-  @override
-  void didUpdateWidget(LoginWidget oldWidget) {
+  Future<bool> _tryLogin() async {
+    //Try logging in
+    try {
+      deezerAPI.arl = settings.arl;
+      bool resp = await deezerAPI.rawAuthorize(
+          onError: (e) => setState(() => _error = e.toString()));
+      if (resp == false) {
+        //false, not null
+        if ((settings.arl ?? '').length != 192) {
+          _error = '${(_error ?? '')}Invalid ARL length!';
+        }
+        setState(() => settings.arl = null);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      _error = e.toString();
+      if (kDebugMode) {
+        print('Login error: $e');
+      }
+      setState(() => settings.arl = null);
+      return false;
+    }
+  }
+
+  void _update() async {
+    setState(() => {});
+
+    bool loginSuccess = await _tryLogin();
+    if (!loginSuccess) {
+      errorDialog();
+    }
+
+    await settings.save();
     _start();
-    super.didUpdateWidget(oldWidget);
-  }*/
+  }
+
+  // ARL auth: called on "Save" click, Enter and DPAD_Center press
+  void goARL(FocusNode? node, TextEditingController controller) {
+    node?.unfocus();
+    controller.clear();
+    settings.arl = _arl?.trim();
+    Navigator.of(context).pop();
+    _update();
+  }
 
   @override
   void initState() {
@@ -190,45 +225,6 @@ class _LoginWidgetState extends State<LoginWidget> {
             ],
           );
         });
-  }
-
-  void _update() async {
-    setState(() => {});
-
-    //Try logging in
-    try {
-      deezerAPI.arl = settings.arl;
-      bool resp = await deezerAPI.rawAuthorize(
-          onError: (e) => setState(() => _error = e.toString()));
-      if (resp == false) {
-        //false, not null
-        if ((settings.arl ?? '').length != 192) {
-          _error = '${(_error ?? '')}Invalid ARL length!';
-        }
-        setState(() => settings.arl = null);
-        errorDialog();
-      }
-      //On error show dialog and reset to null
-    } catch (e) {
-      _error = e.toString();
-      if (kDebugMode) {
-        print('Login error: $e');
-      }
-      setState(() => settings.arl = null);
-      errorDialog();
-    }
-
-    await settings.save();
-    _start();
-  }
-
-  // ARL auth: called on "Save" click, Enter and DPAD_Center press
-  void goARL(FocusNode? node, TextEditingController controller) {
-    node?.unfocus();
-    controller.clear();
-    settings.arl = _arl?.trim();
-    Navigator.of(context).pop();
-    _update();
   }
 
   @override
