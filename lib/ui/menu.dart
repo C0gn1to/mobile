@@ -313,13 +313,22 @@ class MenuSheet {
           overflow: TextOverflow.ellipsis,
         ),
         leading: const Icon(Icons.recent_actors),
-        onTap: () {
-          if (context.mounted) _close(context);
-          customNavigatorKey.currentState
-              ?.push(MaterialPageRoute(builder: (context) => ArtistDetails(a)));
+        onTap: () async {
+          try {
+            Artist b = await deezerAPI.artist(a.id!);
+            if (context.mounted) _close(context);
+            customNavigatorKey.currentState
+                ?.push(MaterialPageRoute(builder: (context) => ArtistDetails(b)));
 
-          navigateCallback();
-        },
+            navigateCallback();
+          } catch(e) {
+            if (context.mounted) _close(context);
+            customNavigatorKey.currentState
+                ?.push(MaterialPageRoute(builder: (context) => const ErrorScreen()));
+
+            navigateCallback();
+          }
+        }
       );
 
   Widget showAlbum(Album a, BuildContext context) => ListTile(
@@ -829,6 +838,13 @@ class _SelectPlaylistDialogState extends State<SelectPlaylistDialog> {
                 child: CircularProgressIndicator(color: Theme.of(context).primaryColor,),
               ),
             );
+          }
+
+          // Check if snapshot has data before accessing it
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const SizedBox(
+              child: ErrorScreen(),
+            );  
           }
 
           List<Playlist> playlists = snapshot.data!;

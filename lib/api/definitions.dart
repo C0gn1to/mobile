@@ -189,7 +189,7 @@ class Track {
         favorite: (data['favorite'] == 1) ? true : false,
         diskNumber: data['diskNumber'],
         explicit: (data['explicit'] == 1) ? true : false,
-        fallback: data['fallback'] != null ? Track(id: data['fallback']) : null,
+        fallback: data['fallback'] != null ? Track(id: data['fallback'].toString()) : null,
         //favoriteDate: data['favoriteDate']
       );
 

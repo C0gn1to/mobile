@@ -58,7 +58,9 @@ class AudioPlayerHandler extends BaseAudioHandler
   // for some reason, dart can decide not to respect the 'await' due to weird task sceduling ...
   final Completer<void> _playerInitializedCompleter = Completer<void>();
   late AudioPlayer _player;
-  final _playlist = ConcatenatingAudioSource(children: []);
+  final _playlist = ConcatenatingAudioSource(
+    useLazyPreparation: true,
+    children: []);
   // Prevent MediaItem change while shuffling or otherwise rearranging the queue by just_audio internals
   bool _rearranging = false;
 

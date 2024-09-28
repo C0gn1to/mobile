@@ -330,7 +330,7 @@ class ArtistDetails extends StatefulWidget {
 }
 
 class _ArtistDetailsState extends State<ArtistDetails> {
-  Artist artist = Artist();
+  late Artist artist = Artist();
   bool _loading = true;
   bool _error = false;
 
@@ -349,9 +349,9 @@ class _ArtistDetailsState extends State<ArtistDetails> {
 
   @override
   void initState() {
+    super.initState();
     artist = widget.artist;
     _loadArtist();
-    super.initState();
   }
 
   @override
@@ -380,7 +380,7 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: <Widget>[
                                 Text(
-                                  artist.name ?? '',
+                                  artist.name ?? 'Unavailable',
                                   overflow: TextOverflow.ellipsis,
                                   maxLines: 4,
                                   textAlign: TextAlign.center,

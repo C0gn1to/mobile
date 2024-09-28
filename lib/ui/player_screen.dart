@@ -65,7 +65,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
     if (settings.blurPlayerBackground) {
       setState(() {
         _blurImage =
-            NetworkImage(audioHandler.mediaItem.value?.extras?['thumb'] ?? audioHandler.mediaItem.value?.artUri);
+            CachedNetworkImageProvider(audioHandler.mediaItem.value?.extras?['thumb'] ?? audioHandler.mediaItem.value?.artUri);
       });
     }
 

@@ -1061,9 +1061,9 @@ class _LibraryPlaylistsState extends State<LibraryPlaylists> {
   }
 
   Playlist get favoritesPlaylist => Playlist(
-      id: deezerAPI.favoritesPlaylistId,
+      id: deezerAPI.favoritesPlaylistId ?? '0',
       title: 'Favorites'.i18n,
-      user: User(name: deezerAPI.userName),
+      user: User(name: deezerAPI.userName ?? 'Unavailable'),
       image: ImageDetails(thumbUrl: 'assets/favorites_thumb.jpg'),
       tracks: [],
       trackCount: 1,

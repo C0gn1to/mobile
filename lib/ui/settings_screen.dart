@@ -105,7 +105,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ListTile(
             title: Text('Updates'.i18n),
             leading: const LeadingIcon(Icons.update, color: Color(0xff2ba766)),
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const UpdaterScreen())),
+            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => UpdaterScreen())),
           ),
           ListTile(
             title: Text('About'.i18n),
