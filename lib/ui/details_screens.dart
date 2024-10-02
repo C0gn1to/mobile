@@ -693,7 +693,7 @@ class _DiscographyScreenState extends State<DiscographyScreen> {
               bottom: TabBar(
                 dividerColor: Colors.transparent,
                 indicatorColor: Theme.of(context).primaryColor,
-                overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+                overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                 labelColor: Theme.of(context).primaryColor,
                 tabs: [
                   Tab(

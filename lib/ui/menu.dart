@@ -753,7 +753,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
       actions: [
         TextButton(
                   style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Dismiss'.i18n),
           onPressed: () {
@@ -763,7 +763,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
         if (cache.sleepTimer != null)
           TextButton(
                     style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
             child: Text('Cancel current timer'.i18n),
             onPressed: () {
@@ -775,7 +775,7 @@ class _SleepTimerDialogState extends State<SleepTimerDialog> {
           ),
         TextButton(
                   style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Save'.i18n),
           onPressed: () {
@@ -964,14 +964,14 @@ class _CreatePlaylistDialogState extends State<CreatePlaylistDialog> {
       actions: <Widget>[
         TextButton(
                   style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Cancel'.i18n),
           onPressed: () => Navigator.of(context).pop(),
         ),
         TextButton(
                   style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text(edit ? 'Update'.i18n : 'Create'.i18n),
           onPressed: () async {

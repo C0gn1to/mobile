@@ -361,7 +361,7 @@ class _FontSelectorState extends State<FontSelector> {
               actions: [
                 TextButton(
                           style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
                   onPressed: () async {
                     setState(() => settings.font = font);
@@ -375,7 +375,7 @@ class _FontSelectorState extends State<FontSelector> {
                 ),
                 TextButton(
                           style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          
          ),
                   onPressed: () {
                     Navigator.of(context).pop();
@@ -787,14 +787,14 @@ class _FilenameTemplateDialogState extends State<FilenameTemplateDialog> {
       actions: [
         TextButton(
                   style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Cancel'.i18n),
           onPressed: () => Navigator.of(context).pop(),
         ),
         TextButton(
                   style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Reset'.i18n),
           onPressed: () {
@@ -804,14 +804,14 @@ class _FilenameTemplateDialogState extends State<FilenameTemplateDialog> {
         ),
         TextButton(
                                                       style: ButtonStyle(
-                                              overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor)
+                                              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                                             ),
           child: Text('Clear'.i18n),
           onPressed: () => _controller.clear(),
         ),
         TextButton(
                                                       style: ButtonStyle(
-                                              overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor)
+                                              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                                             ),
           child: Text('Save'.i18n),
           onPressed: () async {
@@ -933,7 +933,7 @@ class _DownloadsSettingsState extends State<DownloadsSettings> {
                           actions: [
                             TextButton(
                                                                           style: ButtonStyle(
-                                              overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor)
+                                              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                                             ),
                               child: Text('Dismiss'.i18n),
                               onPressed: () => Navigator.of(context).pop(),
@@ -1352,14 +1352,14 @@ class _GeneralSettingsState extends State<GeneralSettings> {
                         actions: <Widget>[
                           TextButton(
                                                       style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
                             child: Text('Cancel'.i18n),
                             onPressed: () => Navigator.of(context).pop(),
                           ),
                           TextButton(
                                                       style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
                             //child: Text('(ARL ONLY) Continue'.i18n),
                             child: Text('Continue'.i18n),
@@ -1439,14 +1439,14 @@ class _LastFMLoginState extends State<LastFMLogin> {
       actions: [
         TextButton(
                                     style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Cancel'.i18n),
           onPressed: () => Navigator.of(context).pop(),
         ),
         TextButton(
                                     style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
           child: Text('Login'.i18n),
           onPressed: () async {

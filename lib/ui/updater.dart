@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:logging/logging.dart';
 import 'package:http/http.dart' as http;
 import 'package:open_filex/open_filex.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -120,7 +121,7 @@ class _UpdaterScreenState extends State<UpdaterScreen> {
               ),
             ),
 
-          if (!_error && !_loading && Version.parse((_versions?.latest.toString() ?? '0.0.0')) <= Version.parse(_current!))
+          if (!_error && !_loading && Version.parse((_versions?.latest.toString() ?? '0.0.0')) > Version.parse(_current!))
             Center(
               child: Padding(
                 padding: EdgeInsets.all(8.0),
@@ -224,48 +225,59 @@ class freezerVersions {
     return freezerVersions.fromJson(jsonDecode(response.body));
   }
 
-  static Future checkUpdate() async {
-    //Check only each 24h
-    int updateDelay = 86400000;
-    if ((DateTime.now().millisecondsSinceEpoch - (cache.lastUpdateCheck??0)) < updateDelay) return;
-    cache.lastUpdateCheck = DateTime.now().millisecondsSinceEpoch;
-    await cache.save();
+  static Future<void> checkUpdate() async {
+    // Check every 24 hours
+    // int updateDelay = 86400000; // 24 hours in milliseconds
+    // if ((DateTime.now().millisecondsSinceEpoch - (cache.lastUpdateCheck ?? 0)) < updateDelay) return;
 
+    // cache.lastUpdateCheck = DateTime.now().millisecondsSinceEpoch;
+    // await cache.save();
+
+    try { 
+      
     freezerVersions versions = await freezerVersions.fetch();
 
     //Load current version
     PackageInfo info = await PackageInfo.fromPlatform();
     if (Version.parse(versions.latest) <= Version.parse(info.version)) return;
 
-    //Get architecture
-    String _arch = await DownloadManager.platform.invokeMethod("arch");
-    if (_arch == 'armv8l') _arch = 'arm32';
-    //Check compatible architecture
-    var compatibleVersion =
-        versions.versions[0].downloads.firstWhereOrNull((d) => d.version.toLowerCase().contains(_arch.toLowerCase()));
-    if (compatibleVersion == null) return;
+      
 
-// Show notification
-  FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
-  const AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings('drawable/ic_logo');
-  final InitializationSettings initializationSettings = InitializationSettings(android: androidInitializationSettings, iOS: null);
-  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+      //Get architecture
+      String _arch = await DownloadManager.platform.invokeMethod("arch");
+      if (_arch == 'armv8l') _arch = 'arm32';
+      
+      //Check compatible architecture
+      var compatibleVersion =
+          versions.versions[0].downloads.firstWhereOrNull((d) => d.version.toLowerCase().contains(_arch.toLowerCase()));
 
-  AndroidNotificationDetails androidNotificationDetails = const AndroidNotificationDetails(
-    'freezerupdates', // Channel ID
-    'freezer Updates', // Channel Name
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+      if (compatibleVersion == null) return;
 
-  NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails, iOS: null);
+      // Show notification
+      FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin = FlutterLocalNotificationsPlugin();
+      const AndroidInitializationSettings androidInitializationSettings = AndroidInitializationSettings('drawable/ic_logo');
+      final InitializationSettings initializationSettings = InitializationSettings(android: androidInitializationSettings, iOS: null);
+      await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
-  await flutterLocalNotificationsPlugin.show(
-    0, // Notification ID
-    'New update available!'.i18n, // Notification title
-    'Update to latest version in the settings.'.i18n, // Notification body
-    notificationDetails,
-  );
+      AndroidNotificationDetails androidNotificationDetails = const AndroidNotificationDetails(
+        'saturnupdates', // Channel ID
+        'Saturn Updates', // Channel Name
+        importance: Importance.high,
+        priority: Priority.high,
+      );
+
+      NotificationDetails notificationDetails = NotificationDetails(android: androidNotificationDetails, iOS: null);
+
+      await flutterLocalNotificationsPlugin.show(
+        0, // Notification ID
+        'New update available!'.i18n, // Notification title
+        'Update to latest version in the settings.'.i18n, // Notification body
+        notificationDetails,
+      );
+
+    } catch (e) {
+      Logger.root.severe('Error checking for updates', e);
+    }
   }
 }
 

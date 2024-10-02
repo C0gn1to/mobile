@@ -450,7 +450,7 @@ class _QualityInfoWidgetState extends State<QualityInfoWidget> {
     if (value != '') {
       return TextButton(
         style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
         child: Text(value),
         onPressed: () {

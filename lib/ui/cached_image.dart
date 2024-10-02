@@ -142,7 +142,7 @@ class _ZoomableImageState extends State<ZoomableImage> {
     ctx = context;
     return TextButton(
               style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
         child: Semantics(
           label: 'Album art'.i18n,

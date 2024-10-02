@@ -333,6 +333,7 @@ public class Deezer {
             String format = "FLAC";
 
             if (quality == 3) format = "MP3_320";
+            if (quality == 1) format = "MP3_128";
 
             try {
                 //arl cookie

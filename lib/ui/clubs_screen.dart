@@ -83,14 +83,14 @@ class ClubsAppBar extends StatelessWidget implements PreferredSizeWidget {
                   actions: [
                     TextButton(
                       style: ButtonStyle(
-                        overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+                        overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                       ),
                       child: Text('Cancel'.i18n),
                       onPressed: () => Navigator.of(context).pop(),
                     ),
                     TextButton(
                       style: ButtonStyle(
-                        overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+                        overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                       ),
                       child: Text('Create'.i18n),
                       onPressed: () async {
@@ -246,7 +246,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                                 actions: [
                                   TextButton(
                                     style: ButtonStyle(
-                                      overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+                                      overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                                     ),
                                     child: Text('Cancel'.i18n),
                                     onPressed: () {
@@ -255,7 +255,7 @@ class _ClubsScreenState extends State<ClubsScreen> {
                                   ),
                                   TextButton(
                                     style: ButtonStyle(
-                                      overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+                                      overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
                                     ),
                                     child: Text('Join'.i18n),
                                     onPressed: () async {
@@ -314,7 +314,7 @@ void _showErrorDialog(BuildContext context, String message) {
         actions: [
           TextButton(
             style: ButtonStyle(
-              overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
             ),
             child: Text('OK'.i18n),
             onPressed: () {
@@ -378,14 +378,14 @@ class InClubAppBar extends StatelessWidget implements PreferredSizeWidget {
       actions: [
         TextButton(
           style: ButtonStyle(
-            overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+            overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
           ),
           child: Text('No'.i18n),
           onPressed: () => Navigator.of(context).pop(),
         ),
         TextButton(
           style: ButtonStyle(
-            overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+            overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
           ),
           child: Text('Yes'.i18n),
           onPressed: () async {
@@ -480,7 +480,7 @@ class _InClubScreenState extends State<InClubScreen> {
           bottom: TabBar(
             dividerColor: Colors.transparent,
             indicatorColor: Theme.of(context).primaryColor,
-            overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+            overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
             labelColor: Theme.of(context).primaryColor,
             tabs: [
               const Tab(icon: Icon(Icons.people, semanticLabel: 'Listeners')),

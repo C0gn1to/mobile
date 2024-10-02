@@ -250,13 +250,13 @@ class _SearchScreenState extends State<SearchScreen> {
                                           TextButton(
                                             onPressed: () => Navigator.of(context).pop(),
                                                     style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
          child: Text('Get me out!'.i18n),
                                           ),
                                           TextButton(
                                                     style: ButtonStyle(
-          overlayColor: WidgetStateProperty.all<Color>(Theme.of(context).primaryColor),
+          overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
          ),
          child: Text('Yes I\'m sure!'.i18n),
                                             onPressed: () async {
