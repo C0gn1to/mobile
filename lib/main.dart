@@ -12,7 +12,7 @@ import 'package:logging/logging.dart';
 import 'package:move_to_background/move_to_background.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:quick_actions/quick_actions.dart';
-//import 'package:restart_app/restart_app.dart';
+import 'package:restart_app/restart_app.dart';
 
 import 'api/cache.dart';
 import 'api/deezer.dart';
@@ -333,7 +333,8 @@ class _MainScreenState extends State<MainScreen>
     switch (state) {
       case AppLifecycleState.detached:
         Logger.root.info('App detached.');
-        GetIt.I<AudioPlayerHandler>().dispose();
+        // GetIt.I<AudioPlayerHandler>().dispose();
+        Restart.restartApp();
         downloadManager.stop();
       case AppLifecycleState.resumed:
       case AppLifecycleState.inactive:

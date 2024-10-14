@@ -108,9 +108,9 @@ dependencies:
   #random_string: ^2.0.1
   #restart_app: ^1.2.1
   # Gradle 8 updated version:
-  #restart_app:
-  #  git:
-  #    url: https://github.com/Argaros/restart_app.git
+  restart_app:
+    git:
+      url: https://github.com/Argaros/restart_app.git
   rxdart: ^0.28.0
   scrobblenaut:
     path: ./scrobblenaut

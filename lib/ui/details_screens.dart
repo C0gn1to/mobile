@@ -1237,7 +1237,7 @@ class _ShowScreenState extends State<ShowScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               mainAxisSize: MainAxisSize.max,
               children: [
-                CachedImage(
+                ZoomableImage(
                   url: _show.art?.full ?? '',
                   rounded: true,
                   width: MediaQuery.of(context).size.width / 2 - 16,
