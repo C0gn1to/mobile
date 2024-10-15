@@ -334,8 +334,8 @@ class _MainScreenState extends State<MainScreen>
       case AppLifecycleState.detached:
         Logger.root.info('App detached.');
         // GetIt.I<AudioPlayerHandler>().dispose();
-        Restart.restartApp();
         downloadManager.stop();
+        Restart.restartApp();
       case AppLifecycleState.resumed:
       case AppLifecycleState.inactive:
       case AppLifecycleState.hidden:

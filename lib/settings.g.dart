@@ -69,6 +69,7 @@ Settings _$SettingsFromJson(Map<String, dynamic> json) => Settings(
       ..colorGradientBackground =
           json['colorGradientBackground'] as bool? ?? true
       ..blurPlayerBackground = json['blurPlayerBackground'] as bool? ?? false
+      ..themeAdditonalItems = json['themeAdditonalItems'] as bool? ?? false
       ..font = json['font'] as String? ?? 'Deezer'
       ..lyricsVisualizer = json['lyricsVisualizer'] as bool? ?? false
       ..displayMode = (json['displayMode'] as num?)?.toInt()
@@ -120,6 +121,7 @@ Map<String, dynamic> _$SettingsToJson(Settings instance) => <String, dynamic>{
       'useSystemTheme': instance.useSystemTheme,
       'colorGradientBackground': instance.colorGradientBackground,
       'blurPlayerBackground': instance.blurPlayerBackground,
+      'themeAdditonalItems': instance.themeAdditonalItems,
       'font': instance.font,
       'lyricsVisualizer': instance.lyricsVisualizer,
       'displayMode': instance.displayMode,

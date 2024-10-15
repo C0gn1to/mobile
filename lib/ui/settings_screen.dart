@@ -21,6 +21,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import 'package:path_provider/path_provider.dart';
 //import 'package:permission_handler/permission_handler.dart';
 import 'package:saturn/ui/log_screen.dart';
+import 'package:saturn/ui/player_bar.dart';
 import 'package:scrobblenaut/scrobblenaut.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 
@@ -215,6 +216,7 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
               onChanged: (bool v) async {
                 setState(() => settings.colorGradientBackground = v);
                 await settings.save();
+                GetIt.I<PlayerBarState>().updateBackground();
               },
             ),
           ),
@@ -227,6 +229,20 @@ class _AppearanceSettingsState extends State<AppearanceSettings> {
               onChanged: (bool v) async {
                 setState(() => settings.blurPlayerBackground = v);
                 await settings.save();
+                GetIt.I<PlayerBarState>().updateBackground();
+              },
+            ),
+          ),
+          ListTile(
+            title: Text('Theme Additonal Items'.i18n),
+            subtitle: Text('Themes additional items like mini player and lyrics'.i18n),
+            leading: const Icon(Icons.library_add),
+            trailing: Switch(
+              value: settings.themeAdditonalItems,
+              onChanged: (bool v) async {
+                setState(() => settings.themeAdditonalItems = v);
+                await settings.save();
+                GetIt.I<PlayerBarState>().updateBackground();
               },
             ),
           ),

@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -37,32 +39,53 @@ class FreezerAppBar extends StatelessWidget implements PreferredSizeWidget {
   final String title;
   final List<Widget> actions;
   final Widget? bottom;
-  //Should be specified if bottom is specified
   final double height;
+  final bool enableBlur;
+  final double opacity;
+  final double blurStrength;
 
-  const FreezerAppBar(this.title, {super.key, this.actions = const [], this.bottom, this.height = 56.0});
+  const FreezerAppBar(
+    this.title, {
+    super.key,
+    this.actions = const [],
+    this.bottom,
+    this.height = 56.0,
+    this.enableBlur = false, // Defaults to no blur
+    this.opacity = 0,      // Defaults to fully opaque
+    this.blurStrength = 0, // Defaults to a standard blur level
+  });
 
   @override
   Size get preferredSize => Size.fromHeight(height);
 
   @override
   Widget build(BuildContext context) {
-    return Theme(
-      data: ThemeData(primaryColor: (Theme.of(context).brightness == Brightness.light) ? Colors.white : Colors.black),
-      child: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle(statusBarBrightness: Theme.of(context).brightness),
-        elevation: 0.0,
-        backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-        foregroundColor: (Theme.of(context).brightness == Brightness.light) ? Colors.black : Colors.white,
-        title: Text(
-          title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
+    return Stack(
+      children: [
+        if (enableBlur)
+          ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: blurStrength, sigmaY: blurStrength),
+              child: Container(
+                color: Theme.of(context).scaffoldBackgroundColor.withOpacity(opacity),
+              ),
+            ),
           ),
+        AppBar(
+          systemOverlayStyle: SystemUiOverlayStyle(statusBarBrightness: Theme.of(context).brightness),
+          elevation: 0.0,
+          backgroundColor: Theme.of(context).scaffoldBackgroundColor.withOpacity(opacity),
+          foregroundColor: (Theme.of(context).brightness == Brightness.light) ? Colors.black : Colors.white,
+          title: Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          actions: actions,
+          bottom: bottom as PreferredSizeWidget?,
         ),
-        actions: actions,
-        bottom: bottom as PreferredSizeWidget?,
-      ),
+      ],
     );
   }
 }

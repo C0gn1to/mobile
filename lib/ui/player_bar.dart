@@ -1,6 +1,11 @@
+import 'dart:ui';
+import 'dart:async';
+
 import 'package:audio_service/audio_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:palette_generator/palette_generator.dart';
 import 'package:get_it/get_it.dart';
 
 import '../service/audio_service.dart';
@@ -17,66 +22,173 @@ class PlayerBar extends StatefulWidget {
   const PlayerBar({super.key});
 
   @override
-  _PlayerBarState createState() => _PlayerBarState();
+  PlayerBarState createState() => PlayerBarState();
 }
 
-class _PlayerBarState extends State<PlayerBar> {
+class PlayerBarState extends State<PlayerBar> {
   final double iconSize = 28;
-  //bool _gestureRegistered = false;
+  ImageProvider? _blurImage;
+  LinearGradient? _bgGradient;
+  Color scaffoldBackgroundColor = Colors.black;
+  AudioPlayerHandler audioHandler = GetIt.I<AudioPlayerHandler>();
+  StreamSubscription? _mediaItemSub;
 
   double get _progress {
-    if (GetIt.I<AudioPlayerHandler>().playbackState.value.processingState == AudioProcessingState.idle) return 0.0;
-    if (GetIt.I<AudioPlayerHandler>().mediaItem.value == null) return 0.0;
-    if (GetIt.I<AudioPlayerHandler>().mediaItem.value!.duration!.inSeconds == 0) return 0.0; //Division by 0
-    return GetIt.I<AudioPlayerHandler>().playbackState.value.position.inSeconds /
-        GetIt.I<AudioPlayerHandler>().mediaItem.value!.duration!.inSeconds;
+    if (audioHandler.playbackState.value.processingState == AudioProcessingState.idle) return 0.0;
+    if (audioHandler.mediaItem.value == null) return 0.0;
+    if (audioHandler.mediaItem.value!.duration!.inSeconds == 0) return 0.0; // Avoid division by 0
+    return audioHandler.playbackState.value.position.inSeconds /
+        audioHandler.mediaItem.value!.duration!.inSeconds;
+  }
+
+  Future<void> _updateBackground() async {
+    if (audioHandler.mediaItem.value == null) return;
+
+    // Load image for blur background
+    if (settings.blurPlayerBackground) {
+      setState(() {
+        _blurImage = CachedNetworkImageProvider(
+          audioHandler.mediaItem.value?.extras?['thumb'] ?? audioHandler.mediaItem.value?.artUri,
+        );
+      });
+    }
+
+    // Generate a color palette from the image
+    PaletteGenerator palette = await PaletteGenerator.fromImageProvider(
+      CachedNetworkImageProvider(
+        audioHandler.mediaItem.value?.extras?['thumb'] ?? audioHandler.mediaItem.value?.artUri,
+      ),
+    );
+
+    // Set gradient based on the dominant color
+    setState(() {
+      _bgGradient = LinearGradient(
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+        colors: [
+          palette.dominantColor?.color.withOpacity(0.7) ?? Colors.black,
+          Colors.transparent,
+        ],
+        stops: const [0.0, 0.6],
+      );
+    });
+  }
+
+  void updateBackground() {
+    _updateBackground();
+  }
+
+    @override
+  void initState() {
+    super.initState();
+    _mediaItemSub = audioHandler.mediaItem.listen((event) {
+      updateBackground();
+    });
+
+    updateColor = _updateBackground;
+    GetIt.I.registerSingleton<PlayerBarState>(this);
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    updateBackground();
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _mediaItemSub?.cancel();
+    GetIt.I.unregister<PlayerBarState>();
   }
 
   @override
   Widget build(BuildContext context) {
     var focusNode = FocusNode();
-    return GestureDetector(
-      key: UniqueKey(),
-      onHorizontalDragEnd: (DragEndDetails details) async {
-        if ((details.primaryVelocity ?? 0) < -100) {
-          // Swiped left
-        if (clubroom.ifhost()) {
-          await GetIt.I<AudioPlayerHandler>().skipToPrevious();
-        }
-        } else if ((details.primaryVelocity ?? 0) > 100) {
-          // Swiped right
-        if (clubroom.ifhost()) {
-          await GetIt.I<AudioPlayerHandler>().skipToNext();
-        }
-        }
-      },
-      onVerticalDragEnd: (DragEndDetails details) async {
-        if ((details.primaryVelocity ?? 0) < -100) {
-          // Swiped up
-          Navigator.of(context).push(SlideBottomRoute(widget: const PlayerScreen()));
-          SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
-            systemNavigationBarColor: settings.themeData.scaffoldBackgroundColor,
-          ));
-        } /*else if ((details.primaryVelocity ?? 0) > 100) {
-          // Swiped down => no action
-        }*/
-      },
-      child: StreamBuilder(
-          stream: Stream.periodic(const Duration(milliseconds: 250)),
-          builder: (BuildContext context, AsyncSnapshot snapshot) {
-            if (GetIt.I<AudioPlayerHandler>().mediaItem.value == null) {
-              return const SizedBox(
-                width: 0,
-                height: 0,
-              );
+
+    return Stack(
+      children: [
+        // Blur background image
+        if (settings.themeAdditonalItems && settings.blurPlayerBackground && _blurImage != null)
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(
+            height: 100.0,
+            child: Stack(
+              children: [
+                if (_blurImage != null)
+                  Positioned.fill(
+                    child: Image(
+                      image: _blurImage!,
+                      fit: BoxFit.cover,
+                      color: Colors.black.withOpacity(0.25),
+                      colorBlendMode: BlendMode.darken,
+                    ),
+                  ),
+
+                Positioned.fill(
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(
+                      sigmaX: 26.0,
+                      sigmaY: 26.0,
+                    ),
+                    child: Container(
+                      color: Colors.transparent,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+
+        // Gradient overlay
+        if (settings.themeAdditonalItems && !settings.blurPlayerBackground && settings.colorGradientBackground && _bgGradient != null)
+          Positioned.fill(
+            child: Container(
+              decoration: BoxDecoration(gradient: _bgGradient),
+            ),
+          ),
+
+        GestureDetector(
+          key: UniqueKey(),
+          onHorizontalDragEnd: (DragEndDetails details) async {
+            if ((details.primaryVelocity ?? 0) < -100) {
+              // Swiped left
+              if (clubroom.ifhost()) {
+                await audioHandler.skipToPrevious();
+              }
+            } else if ((details.primaryVelocity ?? 0) > 100) {
+              // Swiped right
+              if (clubroom.ifhost()) {
+                await audioHandler.skipToNext();
+              }
             }
-            return Column(
-              mainAxisSize: MainAxisSize.min,
-              children: <Widget>[
-                Container(
-                  // For Android TV: indicate focus by grey
-                  color: focusNode.hasFocus ? Colors.black26 : Theme.of(context).bottomAppBarTheme.color,
-                  child: ListTile(
+          },
+          onVerticalDragEnd: (DragEndDetails details) async {
+            if ((details.primaryVelocity ?? 0) < -100) {
+              // Swiped up
+              Navigator.of(context).push(SlideBottomRoute(widget: const PlayerScreen()));
+              SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+                systemNavigationBarColor: settings.themeData.scaffoldBackgroundColor,
+              ));
+            }
+          },
+          child: StreamBuilder(
+            stream: Stream.periodic(const Duration(milliseconds: 250)),
+            builder: (BuildContext context, AsyncSnapshot snapshot) {
+              if (audioHandler.mediaItem.value == null) {
+                return const SizedBox.shrink();
+              }
+
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Container(
+                    color: focusNode.hasFocus ? Colors.black26 : settings.themeAdditonalItems ? Colors.transparent : Theme.of(context).bottomAppBarTheme.color,
+                    child: ListTile(
                       dense: true,
                       focusNode: focusNode,
                       contentPadding: const EdgeInsets.symmetric(horizontal: 8.0),
@@ -89,46 +201,43 @@ class _PlayerBarState extends State<PlayerBar> {
                       leading: CachedImage(
                         width: 50,
                         height: 50,
-                        url: GetIt.I<AudioPlayerHandler>().mediaItem.value?.extras?['thumb'] ??
-                            GetIt.I<AudioPlayerHandler>().mediaItem.value?.artUri,
+                        url: audioHandler.mediaItem.value?.extras?['thumb'] ??
+                            audioHandler.mediaItem.value?.artUri,
                       ),
                       title: Text(
-                        GetIt.I<AudioPlayerHandler>().mediaItem.value?.displayTitle ?? '',
+                        audioHandler.mediaItem.value?.displayTitle ?? '',
                         overflow: TextOverflow.clip,
                         maxLines: 1,
                       ),
                       subtitle: Text(
-                        GetIt.I<AudioPlayerHandler>().mediaItem.value?.displaySubtitle ?? '',
+                        audioHandler.mediaItem.value?.displaySubtitle ?? '',
                         overflow: TextOverflow.clip,
                         maxLines: 1,
                       ),
-                      trailing: IconTheme(
-                        data: IconThemeData(color: settings.isDark ? Colors.white : Colors.grey[600]),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            PrevNextButton(
-                              iconSize,
-                              prev: true,
-                              hidePrev: true,
-                            ),
-                            PlayPauseButton(iconSize),
-                            PrevNextButton(iconSize)
-                          ],
-                        ),
-                      )),
-                ),
-                SizedBox(
-                  height: 3.0,
-                  child: LinearProgressIndicator(
-                    color: Theme.of(context).primaryColor,
-                    backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
-                    value: _progress,
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: <Widget>[
+                          PrevNextButton(iconSize, prev: true, hidePrev: true,),
+                          PlayPauseButton(iconSize),
+                          PrevNextButton(iconSize),
+                        ],
+                      ),
+                    ),
                   ),
-                )
-              ],
-            );
-          }),
+                  SizedBox(
+                    height: 3.0,
+                    child: LinearProgressIndicator(
+                      color: Theme.of(context).primaryColor,
+                      backgroundColor: Theme.of(context).primaryColor.withOpacity(0.1),
+                      value: _progress,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

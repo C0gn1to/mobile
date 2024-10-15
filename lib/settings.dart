@@ -110,6 +110,8 @@ class Settings {
   late bool colorGradientBackground;
   @JsonKey(defaultValue: false)
   late bool blurPlayerBackground;
+  @JsonKey(defaultValue: false)
+  late bool themeAdditonalItems;
   @JsonKey(defaultValue: 'Deezer')
   late String font;
   @JsonKey(defaultValue: false)
