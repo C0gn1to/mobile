@@ -1199,13 +1199,14 @@ enum SortType {
   POPULARITY,
   USER,
   TRACK_COUNT,
-  DATE_ADDED
+  DATE_ADDED,
 }
 
 enum SortSourceTypes {
   //Library
   TRACKS,
   PLAYLISTS,
+  SHOWS,
   ALBUMS,
   ARTISTS,
 

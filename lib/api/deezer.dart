@@ -263,6 +263,16 @@ class DeezerAPI {
     await callGwApi('artist.addFavorite', params: {'ART_ID': id});
   }
 
+  //Add show to favorites/library
+  Future addFavoriteShow(String id) async {
+    await callGwApi('show.addFavorite', params: {'SHOW_ID': id});
+  }
+
+  //Remove show from favorites/library
+  Future removeShow(String id) async {
+    await callGwApi('show.deleteFavorite', params: {'SHOW_ID': id});
+  }
+
   //Remove artist from favorites/library
   Future removeArtist(String id) async {
     await callGwApi('artist.deleteFavorite', params: {'ART_ID': id});
@@ -302,6 +312,14 @@ class DeezerAPI {
         .toList();
   }
 
+  //Get users playlists
+  Future<List<Show>> getShows() async {
+    Map data = await callGwApi('deezer.pageProfile', params: {'nb': 100, 'tab': 'shows', 'user_id': userId});
+    return data['results']['TAB']['shows']['data']
+        .map<Show>((json) => Show.fromPrivateJson(json))
+        .toList();
+  }
+
   //Get favorite trackIds
   Future<List<String>?> getFavoriteTrackIds() async {
     Map data = await callGwApi('user.getAllFeedbacks', params: {'checksums': null});
@@ -311,6 +329,12 @@ class DeezerAPI {
       return songsData.map<String>((song) => song['SNG_ID'] as String).toList();
     }
     return null;
+  }
+
+  Future<bool> checkShowFavorite(Show s) async {
+    Map data = await callGwApi('deezer.pageShow', params: {'show_id': s.id, 'user_id': userId});
+    final favorited = data['results']['FAVORITE_STATUS'];
+    return favorited;
   }
 
   //Get favorite albums

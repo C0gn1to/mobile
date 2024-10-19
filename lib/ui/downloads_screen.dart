@@ -251,10 +251,16 @@ class DownloadTile extends StatelessWidget {
               content: Text('Are you sure you want to delete this download?'.i18n),
               actions: [
                 TextButton(
+                  style: ButtonStyle(
+                    overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                  ),
                   child: Text('Cancel'.i18n),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
                 TextButton(
+                  style: ButtonStyle(
+                    overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                  ),
                   child: Text('Delete'.i18n),
                   onPressed: () async {
                     await downloadManager.removeDownload(download.id!);

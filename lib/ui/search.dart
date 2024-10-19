@@ -343,7 +343,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   SearchBrowseCard(
                     color: const Color(0xff11b192),
                     text: 'Flow'.i18n,
-                    icon: const Icon(Typicons.waves),
+                    icon: const Icon(Typicons.waves, color: Colors.white),
                     onTap: () async {
                       // No channel for Flow...
                       if (clubroom.ifclub()) {
@@ -358,7 +358,7 @@ class _SearchScreenState extends State<SearchScreen> {
                   SearchBrowseCard(
                     color: const Color(0xff7c42bb),
                     text: 'Shows'.i18n,
-                    icon: const Icon(FontAwesome5.podcast),
+                    icon: const Icon(FontAwesome5.podcast, color: Colors.white),
                     onTap: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => Scaffold(
                         appBar: FreezerAppBar('Shows'.i18n),
@@ -376,7 +376,7 @@ class _SearchScreenState extends State<SearchScreen> {
                 children: [
                   SearchBrowseCard(
                     color: const Color(0xffff555d),
-                    icon: const Icon(FontAwesome5.chart_line),
+                    icon: const Icon(FontAwesome5.chart_line, color: Colors.white),
                     text: 'Charts'.i18n,
                     onTap: () => Navigator.of(context).push(MaterialPageRoute(
                       builder: (context) => Scaffold(
@@ -878,7 +878,7 @@ class SearchResultsScreen extends StatelessWidget {
                       },
                     ),
                     onTap: () async {
-                      if (clubroom.ifclub()) {
+                      if (!clubroom.ifclub()) {
                       //Load entire show, then play
                       List<ShowEpisode> episodes =
                           await deezerAPI.allShowEpisodes(e.show!.id ?? '');
@@ -1079,7 +1079,7 @@ class EpisodeListScreen extends StatelessWidget {
                 },
               ),
               onTap: () async {
-                if (clubroom.ifclub()) {
+                if (!clubroom.ifclub()) {
                 //Load entire show, then play
                 List<ShowEpisode> episodes =
                     await deezerAPI.allShowEpisodes(e.show!.id ?? '');

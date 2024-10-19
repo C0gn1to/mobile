@@ -118,24 +118,27 @@ class PlayerBarState extends State<PlayerBar> {
             height: 100.0,
             child: Stack(
               children: [
-                if (_blurImage != null)
-                  Positioned.fill(
-                    child: Image(
-                      image: _blurImage!,
-                      fit: BoxFit.cover,
-                      color: Colors.black.withOpacity(0.25),
-                      colorBlendMode: BlendMode.darken,
-                    ),
-                  ),
-
                 Positioned.fill(
-                  child: BackdropFilter(
-                    filter: ImageFilter.blur(
-                      sigmaX: 26.0,
-                      sigmaY: 26.0,
+                  child: Container(
+                    color: Theme.of(context).bottomAppBarTheme.color,
+                 ),
+                ),
+                if (_blurImage != null)
+                ClipRect(      
+                  child: Container(
+                    decoration: BoxDecoration(
+                      image: DecorationImage(
+                        image: _blurImage!,
+                        fit: BoxFit.cover,
+                        colorFilter: ColorFilter.mode(
+                          Colors.black.withOpacity(0.25),
+                          BlendMode.dstATop,
+                        ),
+                      ),
                     ),
-                    child: Container(
-                      color: Colors.transparent,
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                      child: Container(color: Colors.transparent),
                     ),
                   ),
                 ),

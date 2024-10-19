@@ -138,6 +138,15 @@ class LibraryScreen extends StatelessWidget {
                   builder: (context) => const LibraryPlaylists()));
             },
           ),
+          ListTile(
+            title: Text('Podcasts'.i18n),
+            leading: const LeadingIcon(Icons.podcasts,
+                color: Color.fromARGB(255, 181, 8, 172)),
+            onTap: () {
+              Navigator.of(context).push(MaterialPageRoute(
+                  builder: (context) => const LibraryShows()));
+            },
+          ),
           const FreezerDivider(),
           ListTile(
             title: Text('History'.i18n),
@@ -494,6 +503,9 @@ class _LibraryTracksState extends State<LibraryTracks> {
                   children: <Widget>[
                     MakePlaylistOffline(_playlist),
                     TextButton(
+                      style: ButtonStyle(
+                        overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                      ),
                       child: Row(
                         children: <Widget>[
                           const Icon(
@@ -1254,6 +1266,173 @@ class _LibraryPlaylistsState extends State<LibraryPlaylists> {
                   );
                 },
               )
+            ],
+          ),
+        ));
+  }
+}
+
+class LibraryShows extends StatefulWidget {
+  const LibraryShows({super.key});
+
+  @override
+  _LibraryShowsState createState() => _LibraryShowsState();
+}
+
+class _LibraryShowsState extends State<LibraryShows> {
+  List<Show>? _shows;
+  Sorting _sort = Sorting(sourceType: SortSourceTypes.SHOWS);
+  final ScrollController _scrollController = ScrollController();
+  String _filter = '';
+
+  List<Show> get _sorted {
+    List<Show> shows = List.from(_shows!
+        .where((p) => p.name!.toLowerCase().contains(_filter.toLowerCase())));
+    switch (_sort.type) {
+      case SortType.DEFAULT:
+        break;
+      case SortType.ALPHABETIC:
+        shows.sort(
+            (a, b) => a.name!.toLowerCase().compareTo(b.name!.toLowerCase()));
+        break;
+      default:
+        break;
+    }
+    if (_sort.reverse) return shows.reversed.toList();
+    return shows;
+  }
+
+  Future _load() async {
+    if (!settings.offlineMode) {
+      try {
+        List<Show> shows = await deezerAPI.getShows();
+        if (mounted) setState(() => _shows = shows);
+      } catch (e) {
+        Logger.root.severe('Error loading shows: $e');
+      }
+    }
+  }
+
+  Future _reverse() async {
+    setState(() => _sort.reverse = !_sort.reverse);
+    //Save sorting in cache
+    int? index = Sorting.index(SortSourceTypes.SHOWS);
+    if (index != null) {
+      cache.sorts[index] = _sort;
+    } else {
+      cache.sorts.add(_sort);
+    }
+    await cache.save();
+  }
+
+  @override
+  void initState() {
+    //Restore sort
+    int? index = Sorting.index(SortSourceTypes.SHOWS);
+    if (index != null) {
+      _sort = cache.sorts[index];
+    }
+
+    _load();
+    super.initState();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+        appBar: FreezerAppBar(
+          'Podcasts'.i18n,
+          actions: [
+            IconButton(
+              icon: Icon(
+                _sort.reverse
+                    ? FontAwesome5.sort_alpha_up
+                    : FontAwesome5.sort_alpha_down,
+                semanticLabel: _sort.reverse
+                    ? 'Sort descending'.i18n
+                    : 'Sort ascending'.i18n,
+              ),
+              onPressed: () => _reverse(),
+            ),
+            PopupMenuButton(
+              color: Theme.of(context).scaffoldBackgroundColor,
+              onSelected: (SortType s) async {
+                setState(() => _sort.type = s);
+                //Save to cache
+                int? index = Sorting.index(SortSourceTypes.SHOWS);
+                if (index == null) {
+                  cache.sorts.add(_sort);
+                } else {
+                  cache.sorts[index] = _sort;
+                }
+
+                await cache.save();
+              },
+              itemBuilder: (context) => <PopupMenuEntry<SortType>>[
+                PopupMenuItem(
+                  value: SortType.DEFAULT,
+                  child: Text('Default'.i18n, style: popupMenuTextStyle()),
+                ),
+                PopupMenuItem(
+                  value: SortType.ALPHABETIC,
+                  child: Text('Alphabetic'.i18n, style: popupMenuTextStyle()),
+                ),
+              ],
+              child: const Icon(Icons.sort, size: 32.0),
+            ),
+            Container(width: 8.0),
+          ],
+        ),
+        body: DraggableScrollbar.rrect(
+          controller: _scrollController,
+          backgroundColor: Theme.of(context).primaryColor,
+          child: ListView(
+            controller: _scrollController,
+            children: <Widget>[
+              //Search
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: TextField(
+                  cursorColor: Theme.of(context).primaryColor,
+                    onChanged: (String s) => setState(() => _filter = s),
+                    decoration: InputDecoration(
+                      labelText: 'Search'.i18n,
+                      fillColor: Theme.of(context).bottomAppBarTheme.color,
+                      filled: true,
+                      focusedBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey)),
+                      enabledBorder: const OutlineInputBorder(
+                          borderSide: BorderSide(color: Colors.grey)),
+                      floatingLabelStyle: TextStyle(color: Theme.of(context).primaryColor),
+                    )),
+              ),
+              const FreezerDivider(),
+
+              if (!settings.offlineMode && _shows == null)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    CircularProgressIndicator(color: Theme.of(context).primaryColor,),
+                  ],
+                ),
+
+              if (_shows != null)
+                ...List.generate(_sorted.length, (int i) {
+                  Show s = (_sorted)[i];
+                  return ShowTile(
+                    s,
+                    onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (context) => ShowScreen(s))),
+                    onHold: () {
+                      MenuSheet m = MenuSheet();
+                      m.defaultShowMenu(s, context: context, onRemove: () {
+                        setState(() => _shows!.remove(s));
+                      }, onUpdate: () {
+                        _load();
+                      });
+                    },
+                  );
+                }),
             ],
           ),
         ));

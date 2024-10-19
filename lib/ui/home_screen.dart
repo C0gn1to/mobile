@@ -241,7 +241,9 @@ class HomepageRowSection extends StatelessWidget {
               if (j == (section.items?.length ?? 0)) {
                 if (section.hasMore ?? false) {
                   return TextButton(
-                    
+                    style: ButtonStyle(
+                      overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                    ),
                     child: Text(
                       'Show more'.i18n,
                       textAlign: TextAlign.center,

@@ -175,6 +175,9 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: <Widget>[
                           TextButton(
+                            style: ButtonStyle(
+                              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                            ),
                             child: Row(
                               children: <Widget>[
                                 Icon((album.library ?? false) ? Icons.favorite : Icons.favorite_border, size: 32),
@@ -206,6 +209,9 @@ class _AlbumDetailsState extends State<AlbumDetails> {
                           ),
                           MakeAlbumOffline(album: album),
                           TextButton(
+                            style: ButtonStyle(
+                              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                            ),
                             child: Row(
                               children: <Widget>[
                                 const Icon(
@@ -438,6 +444,9 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                         mainAxisAlignment: MainAxisAlignment.spaceAround,
                         children: <Widget>[
                           TextButton(
+                            style: ButtonStyle(
+                              overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                            ),
                             child: Row(
                               children: <Widget>[
                                 const Icon(Icons.favorite, size: 32),
@@ -457,6 +466,9 @@ class _ArtistDetailsState extends State<ArtistDetails> {
                           ),
                           if ((artist.radio ?? false))
                             TextButton(
+                              style: ButtonStyle(
+                                overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                              ),
                               child: Row(
                                 children: <Widget>[
                                   const Icon(Icons.radio, size: 32),
@@ -1199,6 +1211,26 @@ class _ShowScreenState extends State<ShowScreen> {
   bool _loading = true;
   bool _error = false;
   late List<ShowEpisode> _episodes;
+  Sorting _sort = Sorting(sourceType: SortSourceTypes.SHOWS);
+  String _filter = '';
+  final ScrollController _scrollController = ScrollController();
+
+  List<ShowEpisode> get _sorted {
+    List<ShowEpisode> episodes = List.from(_episodes
+        .where((a) => a.title!.toLowerCase().contains(_filter.toLowerCase())));
+    switch (_sort.type) {
+      case SortType.DEFAULT:
+        break;
+      case SortType.ALPHABETIC:
+        episodes.sort(
+            (a, b) => a.title!.toLowerCase().compareTo(b.title!.toLowerCase()));
+        break;
+      default:
+        break;
+    }
+    if (_sort.reverse) return episodes.reversed.toList();
+    return episodes;
+  }
 
   Future _load() async {
     //Fetch
@@ -1218,19 +1250,42 @@ class _ShowScreenState extends State<ShowScreen> {
     });
   }
 
+  Future _reverse() async {
+    setState(() => _sort.reverse = !_sort.reverse);
+    //Save sorting in cache
+    int? index = Sorting.index(SortSourceTypes.SHOWS);
+    if (index != null) {
+      cache.sorts[index] = _sort;
+    } else {
+      cache.sorts.add(_sort);
+    }
+    await cache.save();
+  }
+
   @override
   void initState() {
+    //Restore sort
+    int? index = Sorting.index(SortSourceTypes.SHOWS);
+    if (index != null) {
+      _sort = cache.sorts[index];
+    }
+
     _show = widget.show;
     _load();
     super.initState();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: FreezerAppBar(_show.name!),
-      body: ListView(
-        children: [
+@override
+Widget build(BuildContext context) {
+  return Scaffold(
+    appBar: FreezerAppBar(_show.name!),
+    body: DraggableScrollbar.rrect(
+      controller: _scrollController,
+      backgroundColor: Theme.of(context).primaryColor,
+      child: ListView(
+        controller: _scrollController,
+        children: <Widget>[
+          Container(height: 4.0),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 8.0),
             child: Row(
@@ -1247,11 +1302,16 @@ class _ShowScreenState extends State<ShowScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.max,
                     children: [
-                      Text(_show.name!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(fontSize: 20.0, fontWeight: FontWeight.bold)),
+                      Text(
+                        _show.name!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 20.0,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                       Container(height: 8.0),
                       Text(
                         _show.description ?? '',
@@ -1259,33 +1319,167 @@ class _ShowScreenState extends State<ShowScreen> {
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
                         style: const TextStyle(fontSize: 16.0),
-                      )
+                      ),
                     ],
                   ),
-                )
+                ),
               ],
             ),
           ),
-          Container(height: 4.0),
+          const FreezerDivider(),
+          Row(
+            mainAxisSize: MainAxisSize.max,
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              FutureBuilder<bool>(
+                future: deezerAPI.checkShowFavorite(_show), // Asynchronous call
+                builder: (context, snapshot) {
+                  // Check the state of the future
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircularProgressIndicator(color: Theme.of(context).primaryColor,);
+                  } else if (snapshot.hasError) {
+                    return Icon(Icons.error); // Handle errors here
+                  } else {
+                    bool isFavorited = snapshot.data ?? false; // Default to false if null
+
+                    return TextButton(
+                      style: ButtonStyle(
+                        overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                      ),
+                      child: Row(
+                        children: <Widget>[
+                          Icon(
+                            isFavorited ? Icons.favorite : Icons.favorite_outline,
+                            size: 32,
+                            semanticLabel: isFavorited ? 'Unlove'.i18n : 'Love'.i18n,
+                          ),
+                          Container(width: 4),
+                          Text('Library'.i18n),
+                        ],
+                      ),
+                      onPressed: () async {
+                        // Add to library
+                        if (!isFavorited) {
+                          await deezerAPI.addFavoriteShow(_show.id!);
+                          setState(() => isFavorited = true);
+                          Fluttertoast.showToast(
+                            msg: 'Added to library'.i18n,
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                          );
+                        } else {
+                          // Remove
+                          await deezerAPI.removeShow(_show.id!);
+                          setState(() => isFavorited = false);
+                          Fluttertoast.showToast(
+                            msg: 'Show removed from library!'.i18n,
+                            toastLength: Toast.LENGTH_SHORT,
+                            gravity: ToastGravity.BOTTOM,
+                          );
+                        }
+                      },
+                    );
+                  }
+                },
+              ),
+              PopupMenuButton(
+                color: Theme.of(context).scaffoldBackgroundColor,
+                onSelected: (SortType s) async {
+                  setState(() => _sort.type = s);
+                  // Save to cache
+                  int? index = Sorting.index(SortSourceTypes.SHOWS);
+                  if (index == null) {
+                    cache.sorts.add(_sort);
+                  } else {
+                    cache.sorts[index] = _sort;
+                  }
+                  await cache.save();
+                },
+                itemBuilder: (context) => <PopupMenuEntry<SortType>>[
+                  PopupMenuItem(
+                    value: SortType.DEFAULT,
+                    child: Text('Default'.i18n, style: popupMenuTextStyle()),
+                  ),
+                  PopupMenuItem(
+                    value: SortType.ALPHABETIC,
+                    child: Text('Alphabetic'.i18n, style: popupMenuTextStyle()),
+                  ),
+                ],
+                child: Row(
+                  children: [
+                    const Icon(Icons.sort, size: 32.0),
+                    const SizedBox(width: 8),
+                    Text('Sort'.i18n),
+                  ],
+                ),
+              ),
+              TextButton(
+                style: ButtonStyle(
+                  overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+                ),
+                child: Row(
+                  children: <Widget>[
+                    Icon(
+                      _sort.reverse
+                          ? FontAwesome5.sort_alpha_up
+                          : FontAwesome5.sort_alpha_down,
+                      semanticLabel: _sort.reverse
+                          ? 'Sort descending'.i18n
+                          : 'Sort ascending'.i18n,
+                    ),
+                    Container(width: 4),
+                    Text(_sort.reverse
+                        ? 'Sort descending'.i18n
+                        : 'Sort ascending'.i18n),
+                  ],
+                ),
+                onPressed: () => _reverse(),
+              ),
+              Container(width: 4.0),
+            ],
+          ),
+          const FreezerDivider(),
+          // Search
+          Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: TextField(
+              cursorColor: Theme.of(context).primaryColor,
+              onChanged: (String s) => setState(() => _filter = s),
+              decoration: InputDecoration(
+                labelText: 'Search'.i18n,
+                fillColor: Theme.of(context).bottomAppBarTheme.color,
+                filled: true,
+                focusedBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey)),
+                enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: Colors.grey)),
+                floatingLabelStyle: TextStyle(color: Theme.of(context).primaryColor),
+              ),
+            ),
+          ),
           const FreezerDivider(),
 
-          //Error
+          // Error
           if (_error) const ErrorScreen(),
 
-          //Loading
+          // Loading
           if (_loading)
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
-                children: [CircularProgressIndicator(color: Theme.of(context).primaryColor,)],
+                children: [
+                  CircularProgressIndicator(
+                    color: Theme.of(context).primaryColor,
+                  ),
+                ],
               ),
             ),
 
-          //Data
+          // Data
           if (!_loading && !_error)
-            ...List.generate(_episodes.length, (i) {
-              ShowEpisode e = _episodes[i];
+            ...List.generate(_sorted.length, (int i) {
+              ShowEpisode e = _sorted[i];
               return ShowEpisodeTile(
                 e,
                 trailing: IconButton(
@@ -1299,14 +1493,19 @@ class _ShowScreenState extends State<ShowScreen> {
                   },
                 ),
                 onTap: () async {
-                  if (clubroom.ifclub()) {
-                  await GetIt.I<AudioPlayerHandler>().playShowEpisode(_show, _episodes, index: i);
+                  if (!clubroom.ifclub()) {
+                    await GetIt.I<AudioPlayerHandler>().playShowEpisode(
+                      _show,
+                      _episodes,
+                      index: i,
+                    );
                   }
                 },
               );
-            })
+            }),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 }

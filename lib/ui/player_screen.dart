@@ -131,7 +131,7 @@ class _PlayerScreenState extends State<PlayerScreen> {
                           decoration: BoxDecoration(
                               image: DecorationImage(
                                   image: _blurImage ?? const NetworkImage(''),
-                                  fit: BoxFit.fill,
+                                  fit: BoxFit.cover,
                                   colorFilter: ColorFilter.mode(Colors.black.withOpacity(0.25), BlendMode.dstATop))),
                           child: BackdropFilter(
                             filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),

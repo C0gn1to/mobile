@@ -174,6 +174,9 @@ class DownloadManager {
           content: Text('Storage permission is required to download content.\nPlease open system settings and grant storage permission to Saturn.'.i18n),
           actions: <Widget>[
             TextButton(
+              style: ButtonStyle(
+                overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+              ),
               child: Text('Cancel'.i18n),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -181,6 +184,9 @@ class DownloadManager {
               },
             ),
             TextButton(
+              style: ButtonStyle(
+                overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+              ),
               child: Text('Open system settings'.i18n),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -208,6 +214,9 @@ class DownloadManager {
                   .i18n),
           actions: <Widget>[
             TextButton(
+              style: ButtonStyle(
+                overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+              ),
               child: Text('Cancel'.i18n),
               onPressed: () {
                 Navigator.of(context).pop();
@@ -215,6 +224,9 @@ class DownloadManager {
               },
             ),
             TextButton(
+              style: ButtonStyle(
+                overlayColor: WidgetStateProperty.resolveWith<Color?>((Set<WidgetState> states) {if (states.contains(WidgetState.pressed)) {return Theme.of(context).primaryColor.withOpacity(0.3);}return null;}),
+              ),
               child: Text('Continue'.i18n),
               onPressed: () {
                 Navigator.of(context).pop();

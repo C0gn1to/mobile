@@ -431,6 +431,10 @@ Future<void> _init() async {
     playbackState.add(playbackState.value.copyWith(shuffleMode: shuffleMode));
   }
 
+  void saveQueueToFile() async {
+    await _saveQueueToFile();
+  }
+
   @override
   Future<void> onTaskRemoved() async {
     dispose();

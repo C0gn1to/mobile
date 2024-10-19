@@ -602,9 +602,23 @@ class MenuSheet {
   // SHOW/EPISODE
   //===================
 
-  defaultShowEpisodeMenu(Show s, ShowEpisode e,
-      {required BuildContext context, List<Widget> options = const []}) {
+  defaultShowMenu(Show s,
+      {required BuildContext context, List<Widget> options = const [], Function? onRemove, Function? onUpdate}) async {
     show(context, [
+      (await deezerAPI.checkShowFavorite(s))
+          ? removeShowLibrary(s, context, onRemove: onRemove)
+          : addShowLibrary(s, context),
+      shareShow(s.id!),
+      ...options
+    ]);
+  }
+
+  defaultShowEpisodeMenu(Show s, ShowEpisode e,
+      {required BuildContext context, List<Widget> options = const [], Function? onRemove, Function? onUpdate}) async {
+    show(context, [
+      (await deezerAPI.checkShowFavorite(s))
+      ? removeShowLibrary(s, context, onRemove: onRemove)
+      : addShowLibrary(s, context),
       shareTile('episode', e.id!),
       shareShow(s.id!),
       downloadExternalEpisode(e),
@@ -612,11 +626,39 @@ class MenuSheet {
     ]);
   }
 
+  //===================
+  // SHOW/EPISODE OPTIONS
+  //===================
+
   Widget shareShow(String id) => ListTile(
         title: Text('Share show'.i18n),
         leading: const Icon(Icons.share),
         onTap: () async {
           Share.share('https://deezer.com/show/$id');
+        },
+      );
+
+  Widget removeShowLibrary(Show s, BuildContext context,
+          {Function? onRemove}) =>
+      ListTile(
+        title: Text('Remove from library'.i18n),
+        leading: const Icon(Icons.delete),
+        onTap: () async {
+          await deezerAPI.removeShow(s.id!);
+          if (onRemove != null) onRemove();
+          if (context.mounted) _close(context);
+        },
+      );
+
+  Widget addShowLibrary(Show s, BuildContext context) => ListTile(
+        title: Text('Add podcast to library'.i18n),
+        leading: const Icon(Icons.favorite),
+        onTap: () async {
+          await deezerAPI.addFavoriteShow(s.id!);
+          Fluttertoast.showToast(
+              msg: 'Added Show to library'.i18n,
+              gravity: ToastGravity.BOTTOM);
+          if (context.mounted) _close(context);
         },
       );
 

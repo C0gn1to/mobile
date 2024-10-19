@@ -494,6 +494,7 @@ const _$SortTypeEnumMap = {
 const _$SortSourceTypesEnumMap = {
   SortSourceTypes.TRACKS: 'TRACKS',
   SortSourceTypes.PLAYLISTS: 'PLAYLISTS',
+  SortSourceTypes.SHOWS: 'SHOWS',
   SortSourceTypes.ALBUMS: 'ALBUMS',
   SortSourceTypes.ARTISTS: 'ARTISTS',
   SortSourceTypes.PLAYLIST: 'PLAYLIST',
