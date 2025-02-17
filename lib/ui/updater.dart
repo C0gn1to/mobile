@@ -221,7 +221,7 @@ class freezerVersions {
 
   //Fetch from website API
   static Future<freezerVersions> fetch() async {
-    http.Response response = await http.get(Uri.parse('https://saturn.kim/api/versions'));
+    http.Response response = await http.get(Uri.parse('https://raw.githubusercontent.com/Ascensionist/revisions/refs/heads/main/versions.json'));
     return freezerVersions.fromJson(jsonDecode(response.body));
   }
 
